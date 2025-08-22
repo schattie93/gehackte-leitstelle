@@ -703,57 +703,87 @@
 
     // ---------- Puzzle Editor Modal ----------
     function editPuzzle(team, puzzle, index){
-      const isNew = !puzzle;
-      puzzle = puzzle || { id: uid(team.id+'-pz'), title:'Neues Rätsel', body:'', answers:[], hint:'', input:'text', afterText:'' };
-      const m = el('div'); m.style.position='fixed'; m.style.inset='0'; m.style.zIndex=50; m.style.background='rgba(0,0,0,.6)';
-      m.innerHTML = `
-        <div class="panel" style="max-width:960px;margin:6vh auto">
-          <div class="row" style="justify-content:space-between;align-items:center">
-            <div class="title">${isNew?'Rätsel hinzufügen':'Rätsel bearbeiten'}</div>
-            <button class="btn secondary" id="x">Schließen</button>
-          </div>
-          <div class="spc"></div>
-          <label>Titel</label><input id="t" value="${escapeAttr(puzzle.title)}"/>
-          <div class="spc"></div>
-          <label>Text (Markdown)</label><textarea id="b">${escapeHTML(puzzle.body||'')}</textarea>
-          <div class="spc"></div>
-          <div class="row">
-            <div><label>Lösung(en) (eine pro Zeile)</label><textarea id="a">${escapeHTML((puzzle.answers||[]).join('\n'))}</textarea></div>
-            <div><label>Eingabefeld</label>
-              <select id="in">
-                <option value="text" ${puzzle.input==='text'?'selected':''}>Text/Code</option>
-                <option value="number" ${puzzle.input==='number'?'selected':''}>Nur Zahlen</option>
-              </select>
-            </div>
-          </div>
-          <div class="spc"></div>
-          <label>Tipp (optional)</label><input id="h" value="${escapeAttr(puzzle.hint||'')}"/>
-          <div class="spc"></div>
-          <label>Zwischentext nach Lösung (HTML erlaubt)</label><textarea id="aft">${escapeHTML(puzzle.afterText||'')}</textarea>
-          <div class="spc"></div>
-          <div class="row">
-            <button class="btn" id="save">Speichern</button>
-            ${isNew?'':'<button class="btn ghost" id="test">Vorschau</button>'}
-          </div>
-        </div>`;
-      m.querySelector('#x').onclick = ()=> m.remove();
-      m.querySelector('#save').onclick = async ()=>{
-        const P = {
-          id: puzzle.id || uid(team.id+'-pz'),
-          title: m.querySelector('#t').value,
-          body: m.querySelector('#b').value,
-          answers: (m.querySelector('#a').value||'').split(/\n/).map(s=>s.trim()).filter(Boolean),
-          hint: m.querySelector('#h').value,
-          input: m.querySelector('#in').value,
-          afterText: m.querySelector('#aft').value
-        };
-        if(isNew){ team.puzzles.push(P); } else { team.puzzles[index]=P; }
-        await rref('data').set(DATA); await ensureProgressShape(team.id);
-        m.remove();
-      };
-      const test = m.querySelector('#test'); if(test) test.onclick = ()=> alert('Akzeptierte Antworten: '+(puzzle.answers||[]).join(', ')+'\n\nAfterText (gekürzt):\n'+(puzzle.afterText||'—'));
-      document.body.appendChild(m);
-    }
+  const isNew = !puzzle;
+  puzzle = puzzle || { id: uid(team.id+'-pz'), title:'Neues Rätsel', body:'', answers:[], hint:'', input:'text', afterText:'' };
+
+  // Overlay
+  const m = el('div');
+  m.style.position = 'fixed';
+  m.style.inset = '0';
+  m.style.zIndex = 50;
+  m.style.background = 'rgba(0,0,0,.6)';
+  // >>> Fix: sichtbar & scrollbar & zentriert
+  m.style.display = 'flex';
+  m.style.alignItems = 'flex-start';
+  m.style.justifyContent = 'center';
+  m.style.padding = '24px';
+  m.style.overflow = 'auto';
+
+  // Modal-Panel (nur Größen/Overflow ergänzt; Rest unverändert)
+  m.innerHTML = `
+    <div class="panel"
+         style="width:min(960px, calc(100vw - 32px));
+                max-height:90vh; overflow:auto; margin:6vh auto">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div class="title">${isNew?'Rätsel hinzufügen':'Rätsel bearbeiten'}</div>
+        <button class="btn secondary" id="x">Schließen</button>
+      </div>
+
+      <div class="spc"></div>
+      <label>Titel</label><input id="t" value="${escapeAttr(puzzle.title)}"/>
+      <div class="spc"></div>
+
+      <label>Text (Markdown)</label><textarea id="b">${escapeHTML(puzzle.body||'')}</textarea>
+      <div class="spc"></div>
+
+      <div class="row">
+        <div>
+          <label>Lösung(en) (eine pro Zeile)</label>
+          <textarea id="a">${escapeHTML((puzzle.answers||[]).join('\n'))}</textarea>
+        </div>
+        <div>
+          <label>Eingabefeld</label>
+          <select id="in">
+            <option value="text" ${puzzle.input==='text'?'selected':''}>Text/Code</option>
+            <option value="number" ${puzzle.input==='number'?'selected':''}>Nur Zahlen</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="spc"></div>
+      <label>Tipp (optional)</label><input id="h" value="${escapeAttr(puzzle.hint||'')}"/>
+      <div class="spc"></div>
+
+      <label>Zwischentext nach Lösung (HTML erlaubt)</label>
+      <textarea id="aft">${escapeHTML(puzzle.afterText||'')}</textarea>
+      <div class="spc"></div>
+
+      <div class="row">
+        <button class="btn" id="save">Speichern</button>
+        ${isNew?'':'<button class="btn ghost" id="test">Vorschau</button>'}
+      </div>
+    </div>`;
+
+  m.querySelector('#x').onclick = ()=> m.remove();
+  m.querySelector('#save').onclick = async ()=>{
+    const P = {
+      id: puzzle.id || uid(team.id+'-pz'),
+      title: m.querySelector('#t').value,
+      body: m.querySelector('#b').value,
+      answers: (m.querySelector('#a').value||'').split(/\n/).map(s=>s.trim()).filter(Boolean),
+      hint: m.querySelector('#h').value,
+      input: m.querySelector('#in').value,
+      afterText: m.querySelector('#aft').value
+    };
+    if(isNew){ team.puzzles.push(P); } else { team.puzzles[index]=P; }
+    await rref('data').set(DATA);
+    await ensureProgressShape(team.id);
+    m.remove();
+  };
+  const test = m.querySelector('#test');
+  if(test) test.onclick = ()=> alert('Akzeptierte Antworten: '+(puzzle.answers||[]).join(', ')+'\n\nAfterText (gekürzt):\n'+(puzzle.afterText||'—'));
+  document.body.appendChild(m);
+}
 
     // ---------- SVG / Illustrations ----------
     function icon(name,size=24){
