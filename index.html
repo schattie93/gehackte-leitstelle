@@ -907,25 +907,30 @@ button.panel[data-team] .small.muted{ margin-top: -2px; display: inline-block; }
 // Johanniter/Malteser: NUR rote Außenkontur (kein Kreis, keine Füllung)
 // RTW-Illustration: ohne rechten Kasten, symmetrische Räder, Blaulicht-Puls
 // Malteserkreuz: NUR rote Außenkontur (korrekte Form, dünnere Linien)
+// RTW-Illustration inkl. Malteserkreuz-OUTLINE (korrekte Geometrie)
 function artAmbulance(){
-  // Punkte für Malteser-Umriss berechnen
-  function malteserOutlinePoints(cx, cy, R=26, rShoulder=18, rInner=9, shoulderDeg=12){
+  // Maltese-Outline: pro 45°-Sektor -> äußere Spitze (R) – innerer Einzug (r) – äußere Spitze (R)
+  function malteserOutlinePoints(cx, cy, R=26, r=9, eps=13){
     const pts = [];
-    for(let k=0;k<8;k++){
-      const a0 = -90 + k*45;
-      const aS1 = a0 + shoulderDeg;
-      const aI  = a0 + 22.5;
-      const aS2 = a0 + 45 - shoulderDeg;
-      const seg = [[R,a0],[rShoulder,aS1],[rInner,aI],[rShoulder,aS2]];
-      for(const [rad,deg] of seg){
-        const t = deg*Math.PI/180;
-        pts.push((cx + rad*Math.cos(t)).toFixed(1)+','+(cy + rad*Math.sin(t)).toFixed(1));
-      }
+    for(let i=0;i<8;i++){
+      const start = i*45;          // Startwinkel des Sektors
+      const mid   = start + 22.5;  // innerer Einzug (zwischen den Armen)
+      const end   = start + 45;    // Ende des Sektors
+      const A = (start + eps) * Math.PI/180;
+      const M = (mid)        * Math.PI/180;
+      const B = (end - eps)  * Math.PI/180;
+      pts.push(
+        (cx + R*Math.cos(A)).toFixed(1)+','+(cy + R*Math.sin(A)).toFixed(1),
+        (cx + r*Math.cos(M)).toFixed(1)+','+(cy + r*Math.sin(M)).toFixed(1),
+        (cx + R*Math.cos(B)).toFixed(1)+','+(cy + R*Math.sin(B)).toFixed(1),
+      );
     }
     return pts.join(' ');
   }
 
-  const pts = malteserOutlinePoints(225,130, 26, 18, 9, 12);
+  const cx = 225, cy = 130;               // Position im Kasten
+  const maltPoints = malteserOutlinePoints(cx, cy, 26, 9, 13); // R=26, r=9, Offset=13°
+  const strokeThin = 2;                   // dünnere Linie für das Kreuz
 
   return `<svg viewBox="0 0 640 240" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-label="RTW">
     <defs>
@@ -957,13 +962,17 @@ function artAmbulance(){
         <animate attributeName="opacity" values="0;.9;0;.9;0" keyTimes="0;0.18;0.36;0.54;1" dur="1.4s" repeatCount="indefinite"/>
       </circle>
 
-      <!-- Malteserkreuz: nur rote Außenkontur -->
-      <polygon points="${pts}" fill="none"
-               stroke="#e6002e" stroke-width="2.5"
-               stroke-linejoin="miter" stroke-miterlimit="3"/>
+      <!-- Malteserkreuz: NUR Außenkontur (korrekte 8-Spitzen-Geometrie) -->
+      <polygon points="${maltPoints}"
+               fill="none"
+               stroke="#e6002e"
+               stroke-width="${strokeThin}"
+               stroke-linejoin="miter"
+               stroke-miterlimit="2"/>
     </g>
   </svg>`;
 }
+
 
 
 
