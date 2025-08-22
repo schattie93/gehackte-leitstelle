@@ -90,6 +90,46 @@
     .art{display:grid;place-items:center;min-height:120px;border:1px solid rgba(255,255,255,.12);border-radius:16px;
       background:linear-gradient(145deg, rgba(0,255,198,.06), rgba(122,92,255,.06));}
     .hidden{display:none}
+    /* === Teamauswahl farbig hervorheben === */
+button.panel[data-team="team-a"]{
+  background: linear-gradient(180deg, rgba(0,255,198,.14), rgba(0,180,150,.12));
+  border-color: rgba(0,255,198,.45);
+  box-shadow: 0 10px 40px rgba(0,255,198,.15), inset 0 0 40px rgba(0,255,198,.12);
+  transition: transform .15s ease, filter .15s ease, box-shadow .15s ease;
+}
+
+button.panel[data-team="team-b"]{
+  background: linear-gradient(180deg, rgba(122,92,255,.14), rgba(80,60,200,.12));
+  border-color: rgba(122,92,255,.45);
+  box-shadow: 0 10px 40px rgba(122,92,255,.15), inset 0 0 40px rgba(122,92,255,.12);
+  transition: transform .15s ease, filter .15s ease, box-shadow .15s ease;
+}
+
+/* Hover/Fokus-Feedback */
+button.panel[data-team]:hover{
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+button.panel[data-team]:focus-visible{
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgba(255,255,255,.25),
+    0 10px 40px rgba(0,0,0,.45),
+    inset 0 0 40px rgba(255,255,255,.12);
+}
+
+/* Label-Pills in Team-Farben */
+button.panel[data-team="team-a"] .pill{
+  background: rgba(0,255,198,.15);
+  border-color: rgba(0,255,198,.35);
+  color: #bfffea;
+}
+button.panel[data-team="team-b"] .pill{
+  background: rgba(122,92,255,.15);
+  border-color: rgba(122,92,255,.35);
+  color: #e6e0ff;
+}
+
   </style>
 
   <!-- Firebase SDKs (compat for simplicity) -->
