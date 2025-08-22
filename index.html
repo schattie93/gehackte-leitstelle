@@ -176,6 +176,24 @@ button.panel[data-team="team-b"]::before{
 /* Der Rätsel-Zähler darunter darf bleiben (steht ja im vorhandenen Markup).
    Falls er zu nah dran ist: */
 button.panel[data-team] .small.muted{ margin-top: -2px; display: inline-block; }
+
+  /* Live-Progress-Zeile in Dashboards oben ausrichten */
+[data-live-dash] .panel > .row{
+  align-items: flex-start !important; /* überschreibt inline center */
+}
+
+/* Kleine optische Glättung: gleiche Innenabstände */
+[data-live-dash] .kbd,
+[data-live-dash] .pill{
+  line-height: 1.2;
+  padding: .28rem .6rem;
+}
+
+/* Zähler etwas dichter unter den Titel */
+[data-live-dash] .small.muted{
+  margin-top: 2px;
+  display: inline-block;
+}
   </style>
 
   <!-- Firebase SDKs (compat for simplicity) -->
