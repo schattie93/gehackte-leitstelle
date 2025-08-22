@@ -266,8 +266,7 @@ const rref = (path)=> db.ref(`rooms/${ROOM}/${path}`);
           ${liveDashboardHTML()}
         </section>
       `;
-      const __dash = el('section','panel'); __dash.setAttribute('data-live-dash','full'); __dash.innerHTML = liveDashboardHTML(false); v.appendChild(__dash);
-app.appendChild(v);
+      app.appendChild(v);
       v.querySelector('#start').onclick = ()=> route('team-select');
       v.querySelector('#status').onclick = ()=> route('waiting');
     }
@@ -351,8 +350,7 @@ app.appendChild(v);
           ${liveDashboardHTML(true)}
         </section>
       `;
-      const __dash = el('section','panel'); __dash.setAttribute('data-live-dash','compact'); __dash.innerHTML = liveDashboardHTML(true); v.appendChild(__dash);
-app.appendChild(v);
+      app.appendChild(v);
       setTimeout(()=> v.querySelector('#answer')?.focus(),0);
 
       v.querySelector('#hint').onclick = ()=>{
