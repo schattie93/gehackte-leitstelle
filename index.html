@@ -1,0 +1,727 @@
+<!doctype html><html lang="de"><head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rettungsleitstelle – Escape</title>
+  <meta name="description" content="Offline Escape Room Webapp – Rettungsdienst Leitstelle gehackt">
+  <style>
+    .card p{ margin: 0 0 .8rem; }
+.card p:last-child{ margin-bottom: 0; }
+    :root{
+      --bg:#0a0f14;
+      --panel:#0f1620;
+      --accent:#00ffc6;
+      --accent-2:#ff3b81;
+      --text:#e6fff7;
+      --muted:#9ad9c9;
+      --danger:#ff6b6b;
+      --ok:#7dff9b;
+      --warn:#ffd166;
+      --shadow: 0 20px 60px rgba(0,0,0,.55), inset 0 0 60px rgba(0,255,198,.05);
+    }
+    html,body{height:100%}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 20% -10%, rgba(0,255,198,.05), transparent),
+                  radial-gradient(1000px 700px at 120% 120%, rgba(255,59,129,.06), transparent),
+                  var(--bg);
+      color:var(--text);
+      letter-spacing:.2px;
+    }
+    .app{max-width:1100px;margin:0 auto;padding:24px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .sig{font-weight:800; font-size:1.05rem; letter-spacing:.12em; text-transform:uppercase}
+    .badge{border:1px solid rgba(0,255,198,.35);color:var(--accent);padding:.15rem .5rem;border-radius:999px;font-size:.8rem;}
+    .crt{position:relative}
+    .crt:before{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(180deg, rgba(0,255,198,.03), rgba(0,255,198,.03) 2px, transparent 2px, transparent 4px);mix-blend-mode:overlay}
+    .panel{background:linear-gradient(180deg,rgba(15,22,32,.95),rgba(15,22,32,.7));border:1px solid rgba(0,255,198,.15); box-shadow:var(--shadow); border-radius:18px; padding:20px}
+    .grid{display:grid;gap:16px}
+    .grid.cols-2{grid-template-columns: repeat(2, minmax(0,1fr))}
+    @media (max-width:900px){.grid.cols-2{grid-template-columns:1fr}}
+    .btn{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(0,255,198,.35); color:var(--bg); background:var(--accent); padding:.8rem 1.1rem; border-radius:14px; font-weight:700; text-decoration:none; cursor:pointer; transition:transform .05s ease, filter .2s;}
+    .btn:hover{filter:brightness(1.05)}
+    .btn:active{transform:translateY(1px)}
+    .btn.secondary{background:transparent;color:var(--accent);}
+    .btn.danger{background:var(--danger);color:white;border-color:rgba(255,255,255,.15)}
+    .btn.muted{background:transparent;border-color:rgba(255,255,255,.12);color:var(--muted)}
+    .title{font-size:1.6rem; font-weight:800; letter-spacing:.02em; margin:0 0 6px}
+    .subtitle{margin:0;color:var(--muted)}
+    .hero{padding:28px 24px; border-radius:22px; background:linear-gradient(145deg, rgba(0,255,198,.06), rgba(255,59,129,.06)); border:1px dashed rgba(255,255,255,.12)}
+    .hero h1{margin:.2rem 0 .4rem 0; font-size:2rem}
+    .row{display:flex; gap:12px; align-items:center}
+    .row > *{flex:1}
+    .spc{height:16px}
+    .chip{display:inline-flex;align-items:center;gap:6px;padding:.35rem .6rem;border-radius:999px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.04);font-size:.85rem;color:var(--muted)}
+    .muted{color:var(--muted)}
+    .progressbar{height:8px;background:#0c141c;border-radius:99px;overflow:hidden;border:1px solid rgba(255,255,255,.12)}
+    .progressbar > div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:0%}
+    .kbd{font-family: ui-monospace, Menlo, Monaco, Consolas, "Courier New", monospace; font-size:.92em; padding:.1rem .4rem; border-radius:6px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.15)}
+    .glitch{position:relative;display:inline-block}
+    .glitch:before,.glitch:after{content:attr(data-text);position:absolute;left:0;top:0;opacity:.6;mix-blend-mode:screen;filter:blur(.4px)}
+    .glitch:before{transform:translate(1px,0);color:var(--accent)}
+    .glitch:after{transform:translate(-1px,0);color:var(--accent-2)}
+    .pill{padding:.2rem .5rem;border-radius:50px;border:1px solid rgba(255,255,255,.15);}
+    .hidden{display:none}
+  </style>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0a0f14">
+</head>
+<body>
+  <div class="app crt" id="app"><header><div class="brand"><svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="2" y="10" width="60" height="44" rx="8" fill="#0c141c" stroke="rgba(0,255,198,.35)"></rect><path d="M10 20h44v2H10zM10 42h44v2H10z" fill="rgba(0,255,198,.35)"></path><circle cx="18" cy="32" r="6" stroke="#00ffc6" stroke-width="2"></circle><path d="M12 32c8-10 16 10 24 0s12 0 16 0" stroke="#ff3b81" stroke-width="2"></path></svg><div><div class="sig glitch" data-text="Rettungsleitstelle // OFFLINE">Rettungsleitstelle // OFFLINE</div><div class="small muted">Thema: Leitstelle gehackt · offlinefähig</div></div></div><div class="row" style="justify-content:flex-end; gap:8px;"><button class="btn secondary" id="btn-home">Start</button><button class="btn secondary" id="btn-admin">Admin</button></div></header><div class="grid"><section class="panel"><div class="row" style="justify-content:space-between;align-items:center"><div><div class="title">Adminbereich</div><div class="small muted">Texte, Rätsel (inkl. afterText), Export</div></div><div class="row" style="flex:0 0 auto"><button class="btn" id="save-file">Als Datei exportieren</button><button class="btn secondary" id="export-json">JSON sichern</button></div></div></section><section class="panel"><div class="title">Story &amp; Texte</div><label>Titel</label><input id="adm-title" value="Rettungsleitstelle // OFFLINE"><div class="spc"></div><label>Einleitung</label><textarea id="adm-intro">[Leitstelle, ruhig]
+
+
+
+Guten Morgen, Team. Heute läuft unser **Blackout-Drill**. Wir proben einen Leitstellen-Ausfall. Alle Notrufe werden direkt zu euch geleitet, ihr müsst die Abfragen selbst durchführen und euch selbst verwalten.
+
+[Kurze Pause – dann Rauschen]
+
+"…Moment. Das ist kein Drill mehr. Die Leitstelle wurde **gehackt**. Alle Systeme sind verschlüsselt. Ein echter Notruf hängt in der Warteschlange. Die Hacker haben Rätsel hinterlassen die ihr lösen müsst um das System wieder ans laufen zu bekommen. Los beeilt euch!"</textarea><div class="spc"></div><label>Standard-Zwischentext (Fallback für Rätsel ohne afterText)</label><textarea id="adm-inter">Verbindungsversuch zur Backup-Leitstelle fehlgeschlagen. Setzt die Sicherung der nächsten Teilroutine. **Ruhe bewahren – sauber arbeiten.**</textarea><div class="spc"></div><div class="row"><button class="btn" id="save-story">Speichern</button><button class="btn secondary" id="preview-intro">Einleitung testen</button></div></section><section class="panel"><div class="title">Rätsel verwalten</div><div class="card"><div class="row" style="justify-content:space-between;align-items:center"><div><div class="kbd">Team Alpha</div><div class="small muted">3 Rätsel</div></div><div class="row" style="flex:0 0 auto"><button class="btn secondary" data-act="add" data-team="team-a">+ Rätsel</button><button class="btn muted" data-act="reset" data-team="team-a">Fortschritt zurücksetzen</button></div></div><div class="card"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px"><div style="flex:1 1 auto"><div class="kiosk" style="font-weight:700">Umkleide</div><div class="small muted">Antworten: <span class="kbd">1538</span></div><div class="small muted">afterText: <span class="kbd">gesetzt</span></div></div><div class="row" style="flex:0 0 auto"><button class="btn secondary" data-act="edit" data-team="team-a" data-idx="0">Bearbeiten</button><button class="btn secondary" data-act="up" data-team="team-a" data-idx="0">▲</button><button class="btn secondary" data-act="down" data-team="team-a" data-idx="0">▼</button><button class="btn danger" data-act="del" data-team="team-a" data-idx="0">Löschen</button></div></div></div><div class="card"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px"><div style="flex:1 1 auto"><div class="kiosk" style="font-weight:700">Anaphylaxie mit Zahlen</div><div class="small muted">Antworten: <span class="kbd">1841</span></div><div class="small muted">afterText: <span class="kbd">gesetzt</span></div></div><div class="row" style="flex:0 0 auto"><button class="btn secondary" data-act="edit" data-team="team-a" data-idx="1">Bearbeiten</button><button class="btn secondary" data-act="up" data-team="team-a" data-idx="1">▲</button><button class="btn secondary" data-act="down" data-team="team-a" data-idx="1">▼</button><button class="btn danger" data-act="del" data-team="team-a" data-idx="1">Löschen</button></div></div></div><div class="card"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px"><div style="flex:1 1 auto"><div class="kiosk" style="font-weight:700">Süßer Mangel </div><div class="small muted">Antworten: <span class="kbd">1223</span></div><div class="small muted">afterText: <span class="kbd">gesetzt</span></div></div><div class="row" style="flex:0 0 auto"><button class="btn secondary" data-act="edit" data-team="team-a" data-idx="2">Bearbeiten</button><button class="btn secondary" data-act="up" data-team="team-a" data-idx="2">▲</button><button class="btn secondary" data-act="down" data-team="team-a" data-idx="2">▼</button><button class="btn danger" data-act="del" data-team="team-a" data-idx="2">Löschen</button></div></div></div></div><div class="card"><div class="row" style="justify-content:space-between;align-items:center"><div><div class="kbd">Team Bravo</div><div class="small muted">3 Rätsel</div></div><div class="row" style="flex:0 0 auto"><button class="btn secondary" data-act="add" data-team="team-b">+ Rätsel</button><button class="btn muted" data-act="reset" data-team="team-b">Fortschritt zurücksetzen</button></div></div><div class="card"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px"><div style="flex:1 1 auto"><div class="kiosk" style="font-weight:700">B ruft leise 465</div><div class="small muted">Antworten: <span class="kbd">124</span></div><div class="small muted">afterText: <span class="kbd">gesetzt</span></div></div><div class="row" style="flex:0 0 auto"><button class="btn secondary" data-act="edit" data-team="team-b" data-idx="0">Bearbeiten</button><button class="btn secondary" data-act="up" data-team="team-b" data-idx="0">▲</button><button class="btn secondary" data-act="down" data-team="team-b" data-idx="0">▼</button><button class="btn danger" data-act="del" data-team="team-b" data-idx="0">Löschen</button></div></div></div><div class="card"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px"><div style="flex:1 1 auto"><div class="kiosk" style="font-weight:700">Wenn die Zeit die Zunge stolpert</div><div class="small muted">Antworten: <span class="kbd">3774</span></div><div class="small muted">afterText: <i>leer</i></div></div><div class="row" style="flex:0 0 auto"><button class="btn secondary" data-act="edit" data-team="team-b" data-idx="1">Bearbeiten</button><button class="btn secondary" data-act="up" data-team="team-b" data-idx="1">▲</button><button class="btn secondary" data-act="down" data-team="team-b" data-idx="1">▼</button><button class="btn danger" data-act="del" data-team="team-b" data-idx="1">Löschen</button></div></div></div><div class="card"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px"><div style="flex:1 1 auto"><div class="kiosk" style="font-weight:700">Zackenpoesie</div><div class="small muted">Antworten: <span class="kbd">7833</span></div><div class="small muted">afterText: <i>leer</i></div></div><div class="row" style="flex:0 0 auto"><button class="btn secondary" data-act="edit" data-team="team-b" data-idx="2">Bearbeiten</button><button class="btn secondary" data-act="up" data-team="team-b" data-idx="2">▲</button><button class="btn secondary" data-act="down" data-team="team-b" data-idx="2">▼</button><button class="btn danger" data-act="del" data-team="team-b" data-idx="2">Löschen</button></div></div></div></div></section><section class="panel"><div class="title">Finalrätsel</div><div class="row"><label style="flex:0 0 auto;align-self:center" class="chip"><input type="checkbox" id="fin-enabled"> aktiviert</label><input id="fin-title" placeholder="Titel" value="Sammelpunkt – Hauptkonsole"></div><div class="spc"></div><label>Text</label><textarea id="fin-body">Hier erscheint das Finalrätsel.</textarea><div class="spc"></div><label>Erlaubte Antworten (eine pro Zeile)</label><textarea id="fin-answers">0000</textarea><div class="spc"></div><button class="btn" id="fin-save">Finale speichern</button></section><section class="panel"><div class="title">Einstellungen &amp; Daten</div><div class="row"><div class="card" style="flex:1"><div class="kbd">Admin-PIN</div><div class="spc"></div><label>Neue PIN</label><input id="pin1" placeholder="PIN…"><div class="spc"></div><button class="btn" id="pin-save">PIN ändern</button></div><div class="card" style="flex:1"><div class="kbd">Import / Export</div><div class="spc"></div><div class="row"><button class="btn secondary" id="import-json">JSON importieren</button><input type="file" id="file-json" accept="application/json" class="hidden"><button class="btn" id="save-file2">Als Datei exportieren</button></div><div class="spc"></div><div class="small muted">Export erstellt eine einzelne HTML-Datei mit allen Änderungen.</div></div></div></section></div></div>
+
+  <!--DATA_START-->
+  <script id="game-data" type="application/json">{
+  "version": 3,
+  "title": "Rettungsleitstelle // OFFLINE",
+  "introText": "[Leitstelle, ruhig]\n\n\n\nGuten Morgen, Team. Heute l\u00e4uft unser **Blackout-Drill**. Wir proben einen Leitstellen-Ausfall. Alle Notrufe werden direkt zu euch geleitet, ihr m\u00fcsst die Abfragen selbst durchf\u00fchren und euch selbst verwalten.\n\n[Kurze Pause \u2013 dann Rauschen]\n\n\"\u2026Moment. Das ist kein Drill mehr. Die Leitstelle wurde **gehackt**. Alle Systeme sind verschl\u00fcsselt. Ein echter Notruf h\u00e4ngt in der Warteschlange. Die Hacker haben R\u00e4tsel hinterlassen die ihr l\u00f6sen m\u00fcsst um das System wieder ans laufen zu bekommen. Los beeilt euch!\"",
+  "interstitialTextDefault": "Verbindungsversuch zur Backup-Leitstelle fehlgeschlagen. Setzt die Sicherung der n\u00e4chsten Teilroutine. **Ruhe bewahren \u2013 sauber arbeiten.**",
+  "finale": {
+    "enabled": false,
+    "title": "Sammelpunkt \u2013 Hauptkonsole",
+    "body": "Hier erscheint das Finalr\u00e4tsel.",
+    "answers": [
+      "0000"
+    ]
+  },
+  "teams": [
+    {
+      "id": "team-a",
+      "name": "Team Alpha",
+      "puzzles": [
+        {
+          "id": "a2",
+          "title": "Umkleide",
+          "body": "Geht in die Umkleide,\nihr werdet schon herausfinden, was zu tun ist...",
+          "answers": [
+            "1538"
+          ],
+          "hint": "frag den Spielleiter",
+          "input": "text",
+          "afterText": "Erster code zum entschl\u00fcsseln des Systems korrekt aber ihr habt nicht mehr viel zeit."
+        },
+        {
+          "id": "team-a-pz-bfgjq8",
+          "title": "Anaphylaxie mit Zahlen",
+          "body": "Quaddeln sprie\u00dfen, heiser wird die Stimm\u2019,\ndie Bronchien pfeifen eng, der Druck f\u00e4llt schlimm.\nKalter Schwei\u00df, die Haut wird marmoriert \u2014\nder Puls galoppiert, der Blick ist irritiert.\n\nZuerst der Zugang, sicher, keine M\u00fche:\nihr trefft die Vene mit der gr\u00fcnen Flex\u00fcle.\nDann stoppt ihr Juckreiz, R\u00f6te, Hustenflut \u2014\nihr gebt gezielt das Schild: es hei\u00dft Histakut.\nDer Kreislauf kippt \u2013 jetzt z\u00e4hlt nur rasches Hoffen:\nihr h\u00e4ngt zwei Ringer-Infusionen, weit offen",
+          "answers": [
+            "1841"
+          ],
+          "hint": "",
+          "input": "text",
+          "afterText": "Mist, ihr seid wirklich gut aber das letzte R\u00e4tsel werdet ihr nicht l\u00f6sen!"
+        },
+        {
+          "id": "team-a-pz-k4vq4a",
+          "title": "S\u00fc\u00dfer Mangel ",
+          "body": "Er schwitzt und zittert, Worte fallen schwer,\nder Blick wird glasig, H\u00e4nde greifen leer.\nKein Alkoholgeruch, doch Unruhe im Sinn,\nder Puls ist flink, die Kraft geht schnell dahin.\n\nBei D piept\u2019s kurz, der Messwert f\u00e4llt zu tief,\ner wird verwirrter, lallt und taumelt schief.\nDie Frage steht: Was bringt ihn rasch zur\u00fcck,\nbevor die Lage kippt \u2013 mit klarem Blick?\n\nEine Null im Team kann niemand gebrauchen,\ndrum macht ihr es selbst und lasst ihn zum RTW laufen,\nF\u00fcr eine Broteinheit brauchst du nicht viel Zeit,\nDie Spritze legst du dir bereit,\nschnell verd\u00fcnnt langsam gespritzt,\nDer Patient erwacht schnell du warst gewitzt.\n",
+          "answers": [
+            "1223"
+          ],
+          "hint": "",
+          "input": "text",
+          "afterText": "Ihr habt eure Team R\u00e4tsel gel\u00f6st. Aber an der Gemeinschaftsaufgabe werdet ihr scheitern!"
+        }
+      ]
+    },
+    {
+      "id": "team-b",
+      "name": "Team Bravo",
+      "puzzles": [
+        {
+          "id": "b1",
+          "title": "B ruft leise 465",
+          "body": "Wenn\u2019s Oxi kreischt bei achtundsiebzig flach,\nund \u201eB\u201c ist dran, der Atem wirkt dir schwach,\nruh\u2019 ich im RTW, aus Stahl und Pflicht:\nzehn Liter Bauch, bei hundertvierzig dicht.\n\nDoch f\u00fcnfzig Bar \u2013 Reserve, strikt tabu;\nder Minderer z\u00e4hmt, ihr dosiert ruhig zu.\nDie Brille drei \u2013 ein leiser erster Zug,\ndoch reicht es nicht, die Lage dr\u00e4ngt genug.\n\nReservoir zw\u00f6lf: ihr hebt den Flow im Nu,\nder Atem bricht \u2013 nun BMB dazu.\nC-Griff sitzt, PEEP f\u00fcnf h\u00e4lt Alveolen weit,\ndas Manometer mahnt: Rechnet \u2013 es ist Zeit.",
+          "answers": [
+            "124"
+          ],
+          "hint": "Nasensonde klein, Maske gro\u00df.",
+          "input": "text",
+          "afterText": "Sicherung <b>O2-12</b> gesetzt."
+        },
+        {
+          "id": "team-b-pz-7346hh",
+          "title": "Wenn die Zeit die Zunge stolpert",
+          "body": "Der Ruf klingt eilig, Treppenhaus, drittes Stockwerk,\ndie T\u00fcr ist offen, der Blick wirkt leer und zerstreut im Verkehr.\nder Arm f\u00e4llt schwer,\ndie Worte kleben, kommen kaum mehr.\n\nIhr fragt nach Zeiten \u2013 die Nachbarin spricht schnell:\n\u201eZuletzt unauff\u00e4llig um 12:41, ganz offiziell.\u201c\nJetzt steht ihr da, es ist 13:18 klar,\ndie Uhr tickt laut, die Minuten sind rar.\n\nA ist frei, B klingt ruhig mit achtzehn Z\u00fcgen,\nSpO\u2082 95, kein Grund zum L\u00fcgen.\nC: 186/98, Puls 92 im Takt,\nBZ 127 mg/dL \u2013 Hypo ist\u2019s nicht, gut abgehakt.\nD: Er hebt links mit Kraft, rechts f\u00e4llt es schwer,\nDer Mund h\u00e4ngt rechts, Sprache verwaschen \u2013 das FAST spricht B\u00e4nde, mehr und mehr.\n",
+          "answers": [
+            "3774"
+          ],
+          "hint": "",
+          "input": "text",
+          "afterText": ""
+        },
+        {
+          "id": "team-b-pz-85er4x",
+          "title": "Zackenpoesie",
+          "body": "Im Flur die Brust, der Druck ist schwer,\nihr klebt zw\u00f6lf Ableitungen \u2013 und mehr.\nDas Papier l\u00e4uft still, doch sagt genug:\n25 mm/s, die Norm im Zug.\nEin 10-Sekunden-Streifen zieht vorbei,\nihr z\u00e4hlt dreizehn Zacken \u2013 seid dabei.\n\nDie Grundlinie flimmert, P bleibt fern,\nder Abstand t\u00e4nzelt unregelm\u00e4\u00dfig gern.\nDer QRS wirkt schmal und ohne Qual,\n0,10 s \u2013 so steht\u2019s im Zahlenstrahl.\nDoch tiefer sticht ein zweiter Sinn:\nIn II, III, aVF geht\u2019s 2 mm hin,\nin I und aVL senkt\u2019s 1 mm sacht \u2014\nder Schmerz im Brustbein kam mit Macht.\n\n\nIhr deutet leis, doch rechnet klug,\ndenn nur der Code gibt jetzt genug.\n\n",
+          "answers": [
+            "7833"
+          ],
+          "hint": "",
+          "input": "text",
+          "afterText": ""
+        }
+      ]
+    }
+  ],
+  "adminPINHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"
+}</script>
+  <!--DATA_END-->
+
+  <script>
+  (function(){
+    'use strict';
+
+    // ---------- Utilities ----------
+    const $ = sel => document.querySelector(sel);
+    const escapeHTML = (s) => String(s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    const escapeAttr = (s) => String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+
+// --- PIN hashing helpers (for hosting) ---
+async function sha256Hex(s){
+  const b = new TextEncoder().encode(s);
+  const h = await crypto.subtle.digest('SHA-256', b);
+  return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function verifyPin(pin){
+  if(DATA.adminPINHash){ return (await sha256Hex(pin)) === DATA.adminPINHash; }
+  return pin === (DATA.adminPIN||'');
+}
+
+    const nl2br = (s) => escapeHTML(s).replace(/\\n/g, '<br>');
+
+function renderMarkdown(src){
+  if(!src) return '';
+  // HTML sicher maskieren
+  let out = escapeHTML(src);
+
+  // **fett**  und  *kursiv*
+  out = out.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  out = out.replace(/\*(.+?)\*/g, '<i>$1</i>');
+
+  // Absätze: leere Zeile = neuer Absatz
+  out = out.replace(/(\r?\n){2,}/g, '</p><p>');
+
+  // einfache Zeile = Zeilenumbruch
+  out = out.replace(/\r?\n/g, '<br>');
+
+  return '<p>'+out+'</p>';
+}
+    const nowISO = () => new Date().toISOString().replace(/[:]/g,'-').slice(0,19);
+    const ls = {
+      get(k, def=null){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; }catch(e){ return def; } },
+      set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+      del(k){ try{ localStorage.removeItem(k);}catch(e){} }
+    };
+
+    // ---------- Data ----------
+    const dataEl = document.getElementById('game-data');
+    let DATA = JSON.parse(dataEl.textContent.trim());
+
+    let STATE = { screen:'home', teamId:null, adminAuthed:false };
+
+    const PROGRESS_KEY = (teamId) => 'ers_progress_'+teamId;
+
+    function ensureProgress(){
+      DATA.teams.forEach(t => {
+        const key = PROGRESS_KEY(t.id);
+        let p = ls.get(key);
+        if(!p){ p = { solved: t.puzzles.map(_ => false), index: 0, started: false, finished: false }; ls.set(key, p); }
+      });
+    }
+    ensureProgress();
+
+    function render(){
+      const app = $('#app');
+      app.innerHTML = '';
+      app.appendChild(renderHeader());
+      let view;
+      if(STATE.screen==='home') view = viewHome();
+      else if(STATE.screen==='team-select') view = viewTeamSelect();
+      else if(STATE.screen==='intro') view = viewIntro();
+      else if(STATE.screen==='puzzle') view = viewPuzzle();
+      else if(STATE.screen==='interstitial') view = viewInterstitial();
+      else if(STATE.screen==='waiting') view = viewWaiting();
+      else if(STATE.screen==='final') view = viewFinal();
+      else if(STATE.screen==='admin-login') view = viewAdminLogin();
+      else if(STATE.screen==='admin') view = viewAdmin();
+      app.appendChild(view);
+    }
+
+    function renderHeader(){
+      const h = document.createElement('header');
+      h.innerHTML = ''
+        + '<div class="brand">'
+        +   logoSVG(28)
+        +   '<div><div class="sig glitch" data-text="'+escapeHTML(DATA.title||'Rettungsleitstelle // OFFLINE')+'">'
+        +   escapeHTML(DATA.title||'Rettungsleitstelle // OFFLINE')+'</div><div class="small muted">Thema: Leitstelle gehackt · offlinefähig</div></div>'
+        + '</div>'
+        + '<div class="row" style="justify-content:flex-end; gap:8px;">'
+        +   '<button class="btn secondary" id="btn-home">Start</button>'
+        +   '<button class="btn secondary" id="btn-admin">Admin</button>'
+        + '</div>';
+      h.querySelector('#btn-home').onclick = ()=>{STATE.screen='home'; STATE.teamId=null; render();}
+      h.querySelector('#btn-admin').onclick = ()=>{STATE.screen = STATE.adminAuthed? 'admin' : 'admin-login'; render();}
+      return h;
+    }
+
+    function viewHome(){
+      const c = document.createElement('div');
+      c.className = 'grid';
+      c.innerHTML = ''
+      + '<section class="panel hero">'
+      + '<p class="badge">Status: <span class="kbd">SYSTEM OFFLINE</span></p>'
+      + '<h1 class="title">Leitstelle kompromittiert – Zugriff eingeschränkt</h1>'
+      + '<p class="subtitle">Zwei Teams arbeiten parallel. Sichert die Teilcodes und entsperrt das System.'
+      + '</p>'
+      + '<div class="spc"></div>'
+      + '<div class="row"><button class="btn" id="start">Teamauswahl</button><button class="btn muted" id="how">Anleitung</button></div>'
+      + '</section>';
+
+      const stats = document.createElement('section');
+      stats.className = 'panel';
+      let inner = '<div class="title">Fortschritt</div><div class="grid cols-2">';
+      DATA.teams.forEach(t=>{
+        const p = ls.get(PROGRESS_KEY(t.id));
+        const solved = p?.solved?.filter(Boolean).length || 0;
+        const total = t.puzzles.length;
+        const done = solved===total && total>0;
+        inner += ''
+          + '<div class="card">'
+          + '<div class="row" style="justify-content:space-between;align-items:center">'
+          +   '<div><div class="kbd">'+escapeHTML(t.name)+'</div>'
+          +   '<div class="small muted">'+solved+'/'+total+' Rätsel gelöst</div></div>'
+          +   '<span class="pill '+(done?'success':'warning')+'">'+(done?'bereit fürs Finale':'aktiv')+'</span>'
+          + '</div>'
+          + '<div class="spc"></div>'
+          + '<div class="progressbar"><div style="width:'+(total? Math.round(solved/total*100):0)+'%"></div></div>'
+          + '</div>';
+      });
+      inner += '</div>';
+      stats.innerHTML = inner;
+
+      c.appendChild(stats);
+
+      c.querySelector('#start').onclick = ()=>{STATE.screen='team-select'; render();}
+      c.querySelector('#how').onclick = ()=>{alert('Admin (PIN beim Spielleiter) → Texte & Rätsel. Pro Rätsel gibt es einen individuellen afterText. Export als eine HTML-Datei im Adminbereich.');}
+      return c;
+    }
+
+    function viewTeamSelect(){
+      const c = document.createElement('section');
+      c.className = 'panel';
+      let inner = '<div class="title">Teamauswahl</div><p class="muted">Wählt euer Team. Danach erscheint die Einleitung.</p><div class="grid cols-2">';
+      DATA.teams.forEach(t=>{
+        inner += '<button class="card" style="text-align:left;cursor:pointer" data-team="'+escapeAttr(t.id)+'">'
+              + '<div class="kbd" style="font-size:1.1rem">'+escapeHTML(t.name)+'</div>'
+              + '<div class="small muted">'+t.puzzles.length+' Rätsel</div></button>';
+      });
+      inner += '</div>';
+      c.innerHTML = inner;
+      c.querySelectorAll('[data-team]').forEach(btn=>{
+        btn.onclick = ()=>{
+          STATE.teamId = btn.getAttribute('data-team');
+          const prog = ls.get(PROGRESS_KEY(STATE.teamId));
+          STATE.screen='intro';
+          if(prog && !prog.started){ prog.started=true; ls.set(PROGRESS_KEY(STATE.teamId), prog); }
+          render();
+        }
+      });
+      return c;
+    }
+
+    function viewIntro(){
+      const c = document.createElement('section');
+      c.className = 'panel';
+      c.innerHTML = '<div class="title">Einleitung</div>'
+        + '<div class="card">' + renderMarkdown(DATA.introText || '') + '</div>'
+        + '<div class="spc"></div><div class="row">'
+        + '<button class="btn" id="go">Los geht’s</button>'
+        + '<button class="btn secondary" id="back">Zurück</button></div>';
+      c.querySelector('#go').onclick = ()=>{ STATE.screen='puzzle'; render(); };
+      c.querySelector('#back').onclick = ()=>{ STATE.screen='team-select'; render(); };
+      return c;
+    }
+
+    function getTeam(){ return DATA.teams.find(t=>t.id===STATE.teamId); }
+
+    function viewPuzzle(){
+      const t = getTeam();
+      if(!t){ STATE.screen='team-select'; return viewTeamSelect(); }
+      const prog = ls.get(PROGRESS_KEY(t.id));
+      const idx = Math.min(prog.index, t.puzzles.length-1);
+      const isDone = prog.finished || (prog.solved.filter(Boolean).length === t.puzzles.length);
+      if(isDone){
+        if(!prog.finished){ prog.finished = true; ls.set(PROGRESS_KEY(t.id), prog); }
+        STATE.screen='waiting';
+        return viewWaiting();
+      }
+      const pz = t.puzzles[idx];
+      const c = document.createElement('section');
+      c.className = 'panel';
+      c.innerHTML = ''
+        + '<div class="row" style="justify-content:space-between;align-items:center">'
+        + '<div><div class="title">'+escapeHTML(pz.title)+'</div>'
+        + '<div class="small muted">'+escapeHTML(t.name)+' · Rätsel '+(idx+1)+' von '+t.puzzles.length+'</div></div>'
+        + '<div class="chip">Fortschritt: '+prog.solved.filter(Boolean).length+'/'+t.puzzles.length+'</div></div>'
+        + '<div class="spc"></div>'
+        + '<div class="card">' + renderMarkdown(pz.body||'') + '</div>'
+        + '<div class="spc"></div>'
+        + '<label>Deine Lösung</label><input id="answer" placeholder="Code eingeben…"/>'
+        + '<div class="spc"></div><div class="row">'
+        + '<button class="btn" id="check">Lösung prüfen</button>'
+        + '<button class="btn secondary" id="hint">Tipp</button></div>'
+        + '<div class="spc"></div><div id="feedback"></div>';
+      setTimeout(()=>{ const a = c.querySelector('#answer'); if(a) a.focus(); }, 0);
+      c.querySelector('#check').onclick = ()=>{
+        const val = (c.querySelector('#answer').value||'').trim();
+        const ok = checkAnswer(pz, val);
+        const fb = c.querySelector('#feedback');
+        if(ok){
+          fb.innerHTML = '<div class="success">Richtig! <b>Teilcode gesichert.</b></div>';
+          prog.solved[idx] = true;
+          prog.index = Math.min(idx+1, t.puzzles.length-1);
+          if(prog.solved.filter(Boolean).length === t.puzzles.length) prog.finished=true;
+          ls.set(PROGRESS_KEY(t.id), prog);
+          ls.set('ers_aftertext_buffer', (pz.afterText||'').trim() || (DATA.interstitialTextDefault||''));
+          setTimeout(()=>{ STATE.screen = prog.finished ? 'waiting' : 'interstitial'; render(); }, 600);
+        } else {
+          fb.innerHTML = '<div class="error">Noch nicht korrekt. Prüft Reihenfolge/Schreibweise.</div>';
+        }
+      };
+      c.querySelector('#hint').onclick = ()=>{
+        c.querySelector('#feedback').innerHTML = '<div class="warning">Hinweis: '+escapeHTML(pz.hint||'Kein Tipp hinterlegt.')+'</div>';
+      };
+      return c;
+    }
+
+    function viewInterstitial(){
+      const c = document.createElement('section');
+      c.className = 'panel';
+      const txt = ls.get('ers_aftertext_buffer') || DATA.interstitialTextDefault || '';
+      c.innerHTML = '<div class="title">Zwischenmeldung</div>'
+        + '<div class="card">'+(txt ? txt : '<i class="muted">— kein Text hinterlegt —</i>')+'</div>'
+        + '<div class="spc"></div><button class="btn" id="next">Weiter zum nächsten Rätsel</button>';
+      c.querySelector('#next').onclick = ()=>{ STATE.screen='puzzle'; render(); }
+      return c;
+    }
+
+    function viewWaiting(){
+      const c = document.createElement('section');
+      c.className = 'panel';
+      const statuses = DATA.teams.map(t => {
+        const p = ls.get(PROGRESS_KEY(t.id));
+        const solved = p?.solved?.filter(Boolean).length || 0;
+        const done = solved === t.puzzles.length && t.puzzles.length>0;
+        return {name:t.name, solved, total:t.puzzles.length, done};
+      });
+      const allDone = statuses.every(s=>s.done);
+      let inner = '<div class="title">Sammelpunkt</div><p class="muted">Wartet, bis beide Teams fertig sind.</p><div class="spc"></div><div class="grid cols-2">';
+      statuses.forEach(s=>{
+        inner += '<div class="card"><div class="row" style="justify-content:space-between;align-items:center">'
+              + '<div><div class="kbd">'+escapeHTML(s.name)+'</div>'
+              + '<div class="small muted">'+s.solved+'/'+s.total+' Rätsel gelöst</div></div>'
+              + '<span class="pill '+(s.done?'success':'warning')+'">'+(s.done?'bereit':'arbeitet…')+'</span>'
+              + '</div><div class="spc"></div><div class="progressbar"><div style="width:'+(s.total? Math.round(s.solved/s.total*100):0)+'%"></div></div></div>';
+      });
+      inner += '</div><div class="spc"></div>'
+            + '<button class="btn" '+(allDone?'':'disabled style="opacity:.6;cursor:not-allowed"')+'>'+(DATA.finale?.enabled?'Zum Finalrätsel':'Finale (Platzhalter)')+'</button>';
+      c.innerHTML = inner;
+      c.querySelector('button.btn').onclick = ()=>{ if(allDone){ STATE.screen='final'; render(); } };
+      return c;
+    }
+
+    function viewFinal(){
+      const c = document.createElement('section');
+      c.className = 'panel';
+      if(!DATA.finale?.enabled){
+        c.innerHTML = '<div class="title">Finale ist noch nicht aktiviert</div><p class="muted">Im Adminbereich aktivierbar.</p>';
+        return c;
+      }
+      const fi = DATA.finale;
+      c.innerHTML = '<div class="title">'+escapeHTML(fi.title||'Finale')+'</div>'
+        + '<div class="card">'+nl2br(fi.body||'')+'</div><div class="spc"></div>'
+        + '<label>Finalcode</label><input id="final-inp" placeholder="Code…"/><div class="spc"></div>'
+        + '<button class="btn" id="final-check">Prüfen</button><div class="spc"></div><div id="final-fb"></div>';
+      c.querySelector('#final-check').onclick = ()=>{
+        const v = (c.querySelector('#final-inp').value||'').trim();
+        const ok = (fi.answers||[]).some(a => norm(a)===norm(v));
+        c.querySelector('#final-fb').innerHTML = ok
+          ? '<div class="success"><b>Alarm ausgelöst!</b> Offline-Modus aktiv.</div>'
+          : '<div class="error">Noch nicht korrekt.</div>';
+      };
+      return c;
+    }
+
+    function viewAdminLogin(){
+      const c = document.createElement('section');
+      c.className = 'panel';
+      c.innerHTML = '<div class="title">Adminzugang</div>'
+        + '<div class="spc"></div><label>PIN</label><input id="pin" type="password" placeholder="PIN…"/><div class="spc"></div>'
+        + '<div class="row"><button class="btn" id="ok">Anmelden</button><button class="btn secondary" id="cancel">Abbrechen</button></div><div class="spc" id="fb"></div>';
+      setTimeout(()=>{c.querySelector('#pin').focus();},0);
+      c.querySelector('#ok').onclick = ()=>{
+        const pin = c.querySelector('#pin').value.trim();
+        if(pin === (DATA.adminPIN||'')){ STATE.adminAuthed=true; STATE.screen='admin'; render(); }
+        else { c.querySelector('#fb').innerHTML = '<div class="error">Falsche PIN.</div>'; }
+      };
+      c.querySelector('#cancel').onclick = ()=>{ STATE.screen='home'; render(); };
+      return c;
+    }
+
+    function viewAdmin(){
+      const wrap = document.createElement('div');
+      wrap.className = 'grid';
+
+      const head = document.createElement('section');
+      head.className = 'panel';
+      head.innerHTML = '<div class="row" style="justify-content:space-between;align-items:center">'
+        + '<div><div class="title">Adminbereich</div><div class="small muted">Texte, Rätsel (inkl. afterText), Export</div></div>'
+        + '<div class="row" style="flex:0 0 auto"><button class="btn" id="save-file">Als Datei exportieren</button><button class="btn secondary" id="export-json">JSON sichern</button></div>'
+        + '</div>';
+      wrap.appendChild(head);
+
+      const story = document.createElement('section');
+      story.className = 'panel';
+      story.innerHTML = '<div class="title">Story & Texte</div>'
+        + '<label>Titel</label><input id="adm-title" value="'+escapeAttr(DATA.title||'Rettungsleitstelle // OFFLINE')+'"/><div class="spc"></div>'
+        + '<label>Einleitung</label><textarea id="adm-intro">'+escapeHTML(DATA.introText||'')+'</textarea><div class="spc"></div>'
+        + '<label>Standard-Zwischentext (Fallback für Rätsel ohne afterText)</label><textarea id="adm-inter">'+escapeHTML(DATA.interstitialTextDefault||'')+'</textarea><div class="spc"></div>'
+        + '<div class="row"><button class="btn" id="save-story">Speichern</button><button class="btn secondary" id="preview-intro">Einleitung testen</button></div>';
+      wrap.appendChild(story);
+
+      const puzzles = document.createElement('section');
+      puzzles.className = 'panel';
+      let phtml = '<div class="title">Rätsel verwalten</div>';
+      DATA.teams.forEach(t=>{
+        phtml += '<div class="card"><div class="row" style="justify-content:space-between;align-items:center">'
+          + '<div><div class="kbd">'+escapeHTML(t.name)+'</div><div class="small muted">'+t.puzzles.length+' Rätsel</div></div>'
+          + '<div class="row" style="flex:0 0 auto"><button class="btn secondary" data-act="add" data-team="'+escapeAttr(t.id)+'">+ Rätsel</button>'
+          + '<button class="btn muted" data-act="reset" data-team="'+escapeAttr(t.id)+'">Fortschritt zurücksetzen</button></div></div>';
+        t.puzzles.forEach((pz, pi)=>{
+          phtml += '<div class="card"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px">'
+            + '<div style="flex:1 1 auto"><div class="kiosk" style="font-weight:700">'+escapeHTML(pz.title)+'</div>'
+            + '<div class="small muted">Antworten: '+(pz.answers||[]).map(a=>'<span class="kbd">'+escapeHTML(a)+'</span>').join(' ')+'</div>'
+            + '<div class="small muted">afterText: '+(pz.afterText?'<span class="kbd">gesetzt</span>':'<i>leer</i>')+'</div></div>'
+            + '<div class="row" style="flex:0 0 auto">'
+            + '<button class="btn secondary" data-act="edit" data-team="'+escapeAttr(t.id)+'" data-idx="'+pi+'">Bearbeiten</button>'
+            + '<button class="btn secondary" data-act="up" data-team="'+escapeAttr(t.id)+'" data-idx="'+pi+'">▲</button>'
+            + '<button class="btn secondary" data-act="down" data-team="'+escapeAttr(t.id)+'" data-idx="'+pi+'">▼</button>'
+            + '<button class="btn danger" data-act="del" data-team="'+escapeAttr(t.id)+'" data-idx="'+pi+'">Löschen</button>'
+            + '</div></div></div>';
+        });
+        phtml += '</div>';
+      });
+      puzzles.innerHTML = phtml;
+      wrap.appendChild(puzzles);
+
+      const fin = document.createElement('section');
+      fin.className = 'panel';
+      fin.innerHTML = '<div class="title">Finalrätsel</div>'
+        + '<div class="row"><label style="flex:0 0 auto;align-self:center" class="chip">'
+        + '<input type="checkbox" id="fin-enabled" '+(DATA.finale?.enabled?'checked':'')+'/> aktiviert</label>'
+        + '<input id="fin-title" placeholder="Titel" value="'+escapeAttr(DATA.finale?.title||'Sammelpunkt – Hauptkonsole')+'"/></div>'
+        + '<div class="spc"></div><label>Text</label><textarea id="fin-body">'+escapeHTML(DATA.finale?.body||'')+'</textarea>'
+        + '<div class="spc"></div><label>Erlaubte Antworten (eine pro Zeile)</label><textarea id="fin-answers">'+escapeHTML((DATA.finale?.answers||[]).join('\\n'))+'</textarea>'
+        + '<div class="spc"></div><button class="btn" id="fin-save">Finale speichern</button>';
+      wrap.appendChild(fin);
+
+      const cfg = document.createElement('section');
+      cfg.className = 'panel';
+      cfg.innerHTML = '<div class="title">Einstellungen & Daten</div>'
+        + '<div class="row">'
+        + '<div class="card" style="flex:1"><div class="kbd">Admin-PIN</div><div class="spc"></div>'
+        + '<label>Neue PIN</label><input id="pin1" placeholder="PIN…"/><div class="spc"></div><button class="btn" id="pin-save">PIN ändern</button></div>'
+        + '<div class="card" style="flex:1"><div class="kbd">Import / Export</div><div class="spc"></div>'
+        + '<div class="row"><button class="btn secondary" id="import-json">JSON importieren</button>'
+        + '<input type="file" id="file-json" accept="application/json" class="hidden" />'
+        + '<button class="btn" id="save-file2">Als Datei exportieren</button></div>'
+        + '<div class="spc"></div><div class="small muted">Export erstellt eine einzelne HTML-Datei mit allen Änderungen.</div></div></div>';
+      wrap.appendChild(cfg);
+
+      // bindings
+      story.querySelector('#save-story').onclick = ()=>{
+        DATA.title = story.querySelector('#adm-title').value;
+        DATA.introText = story.querySelector('#adm-intro').value;
+        DATA.interstitialTextDefault = story.querySelector('#adm-inter').value;
+        persistData(); alert('Gespeichert.'); render();
+      };
+      story.querySelector('#preview-intro').onclick = ()=>{ STATE.screen='intro'; render(); };
+
+      puzzles.addEventListener('click', (e)=>{
+        const btn = e.target.closest('button'); if(!btn) return;
+        const act = btn.getAttribute('data-act');
+        const teamId = btn.getAttribute('data-team');
+        const idx = parseInt(btn.getAttribute('data-idx'));
+        const team = DATA.teams.find(t=>t.id===teamId);
+        if(act==='add'){ editPuzzle(team, null); }
+        if(act==='edit'){ editPuzzle(team, team.puzzles[idx], idx); }
+        if(act==='del'){ if(confirm('Rätsel wirklich löschen?')){ team.puzzles.splice(idx,1); persistData(); render(); } }
+        if(act==='up' && idx>0){ const tmp = team.puzzles[idx-1]; team.puzzles[idx-1]=team.puzzles[idx]; team.puzzles[idx]=tmp; persistData(); render(); }
+        if(act==='down' && idx<team.puzzles.length-1){ const tmp = team.puzzles[idx+1]; team.puzzles[idx+1]=team.puzzles[idx]; team.puzzles[idx]=tmp; persistData(); render(); }
+        if(act==='reset'){ if(confirm('Fortschritt dieses Teams zurücksetzen?')){ ls.del(PROGRESS_KEY(teamId)); ensureProgress(); render(); } }
+      });
+
+      fin.querySelector('#fin-save').onclick = ()=>{
+        DATA.finale = {
+          enabled: fin.querySelector('#fin-enabled').checked,
+          title: fin.querySelector('#fin-title').value,
+          body: fin.querySelector('#fin-body').value,
+          answers: fin.querySelector('#fin-answers').value.split(/\\n/).map(s=>s.trim()).filter(Boolean)
+        };
+        persistData(); alert('Finale gespeichert.');
+      };
+
+      cfg.querySelector('#pin-save').onclick = async ()=>{ const p = cfg.querySelector('#pin1').value.trim(); if(!p){ alert('PIN darf nicht leer sein.'); return; } const h = await sha256Hex(p); DATA.adminPINHash = h; if(DATA.adminPIN) delete DATA.adminPIN; persistData(); alert('PIN geändert.'); };
+      head.querySelector('#save-file').onclick = exportHTML;
+      cfg.querySelector('#save-file2').onclick = exportHTML;
+      head.querySelector('#export-json').onclick = exportJSON;
+
+      cfg.querySelector('#import-json').onclick = ()=> cfg.querySelector('#file-json').click();
+      cfg.querySelector('#file-json').addEventListener('change', async (ev)=>{
+        const file = ev.target.files[0]; if(!file) return;
+        const txt = await file.text();
+        try{
+          const obj = JSON.parse(txt);
+          if(!obj.teams){ throw new Error('Ungültiges Format'); }
+          DATA = obj;
+          dataEl.textContent = JSON.stringify(DATA, null, 2);
+          persistData();
+          alert('JSON importiert.');
+          render();
+        }catch(err){ alert('Fehler beim Import: '+err.message); }
+      });
+
+      return wrap;
+    }
+
+    // ---------- Editors ----------
+    function editPuzzle(team, puzzle, index){
+      const isNew = !puzzle;
+      puzzle = puzzle || { id: uid(team.id+"-pz"), title:'Neues Rätsel', body:'', answers:[], hint:'', input:'text', afterText:'' };
+      const m = modal();
+      m.innerHTML = '<div class="panel" style="max-width:900px;margin:5vh auto">'
+        + '<div class="row" style="justify-content:space-between;align-items:center"><div class="title">'
+        + (isNew?'Rätsel hinzufügen':'Rätsel bearbeiten')
+        + '</div><button class="btn secondary" id="x">Schließen</button></div><div class="spc"></div>'
+        + '<label>Titel</label><input id="t" value="'+escapeAttr(puzzle.title)+'"/><div class="spc"></div>'
+        + '<label>Text</label><textarea id="b">'+escapeHTML(puzzle.body||'')+'</textarea><div class="spc"></div>'
+        + '<div class="row"><div><label>Lösung(en) (eine pro Zeile)</label><textarea id="a">'
+        + escapeHTML((puzzle.answers||[]).join('\\n'))+'</textarea></div>'
+        + '<div><label>Eingabefeld</label><select id="in">'
+        + '<option value="text" '+(puzzle.input==='text'?'selected':'')+'>Text/Code</option>'
+        + '<option value="number" '+(puzzle.input==='number'?'selected':'')+'>Nur Zahlen</option>'
+        + '</select></div></div><div class="spc"></div>'
+        + '<label>Tipp (optional)</label><input id="h" value="'+escapeAttr(puzzle.hint||'')+'"/><div class="spc"></div>'
+        + '<label>Zwischentext nach Lösung (afterText, optional – HTML erlaubt)</label><textarea id="aft">'+escapeHTML(puzzle.afterText||'')+'</textarea>'
+        + '<div class="spc"></div><div class="row"><button class="btn" id="save">Speichern</button>'
+        + (!isNew? '<button class="btn muted" id="test">Vorschau</button>':'' ) + '</div></div>';
+      m.querySelector('#x').onclick = ()=> m.remove();
+      m.querySelector('#save').onclick = ()=>{
+        const P = {
+          id: puzzle.id || uid(team.id+"-pz"),
+          title: m.querySelector('#t').value,
+          body: m.querySelector('#b').value,
+          answers: m.querySelector('#a').value.split(/\\n/).map(s=>s.trim()).filter(Boolean),
+          hint: m.querySelector('#h').value,
+          input: m.querySelector('#in').value,
+          afterText: m.querySelector('#aft').value
+        };
+        if(isNew){ team.puzzles.push(P); } else { team.puzzles[index]=P; }
+        persistData(); m.remove(); render();
+      };
+      const test = m.querySelector('#test');
+      if(test){ test.onclick = ()=> alert('Akzeptierte Antworten: '+(puzzle.answers||[]).join(', ')+'\\n\\nAfterText (gekürzt):\\n'+(puzzle.afterText||'—')); }
+      document.body.appendChild(m);
+    }
+
+    function modal(){
+      const m = document.createElement('div');
+      m.style.position='fixed'; m.style.inset='0'; m.style.background='rgba(0,0,0,.6)'; m.style.backdropFilter='blur(2px)'; m.style.zIndex=50; m.className='crt';
+      return m;
+    }
+
+    // ---------- Helpers ----------
+    function norm(v){ return String(v||'').trim().toLowerCase().replace(/\\s+/g,''); }
+    function checkAnswer(pz, val){ const answers = (pz.answers || []).map(a=>String(a)); const nval = norm(val); return answers.some(a => norm(a)===nval); }
+    function persistData(){ dataEl.textContent = JSON.stringify(DATA, null, 2); try{ ls.set('ers_data_snapshot', DATA); }catch(e){} }
+    function uid(prefix){ return prefix + '-' + Math.random().toString(36).slice(2,8); }
+
+    // ---------- Export (safe, no literal end-script in JS) ----------
+    function exportJSON(){
+      const blob = new Blob([JSON.stringify(DATA, null, 2)], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'escape-rls-data-'+nowISO()+'.json';
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+    }
+
+    function exportHTML(){
+      // Clone the full document and inject JSON safely
+      const cloned = document.implementation.createHTMLDocument(document.title || 'Rettungsleitstelle – Escape');
+      cloned.open(); cloned.write('<!doctype html>' + document.documentElement.outerHTML); cloned.close();
+      const jsonEl = cloned.getElementById('game-data');
+      if(jsonEl){
+        const pattern = new RegExp('</scr' + 'ipt>', 'gi'); // avoid literal end-script in our source
+        const jsonStr = JSON.stringify(DATA, null, 2).replace(pattern, '<\\\\/scr' + 'ipt>');
+        jsonEl.textContent = jsonStr;
+      }
+      const out = '<!doctype html>' + cloned.documentElement.outerHTML;
+      const blob = new Blob([out], {type:'text/html'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'Rettungsleitstelle_Escape_'+nowISO()+'.html';
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+    }
+
+    // ---------- SVG ----------
+    function logoSVG(size){
+      return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'
+        + '<rect x="2" y="10" width="60" height="44" rx="8" fill="#0c141c" stroke="rgba(0,255,198,.35)"/>'
+        + '<path d="M10 20h44v2H10zM10 42h44v2H10z" fill="rgba(0,255,198,.35)"/>'
+        + '<circle cx="18" cy="32" r="6" stroke="#00ffc6" stroke-width="2"/>'
+        + '<path d="M12 32c8-10 16 10 24 0s12 0 16 0" stroke="#ff3b81" stroke-width="2"/>'
+        + '</svg>';
+    }
+
+    // ---------- Boot ----------
+    const snap = ls.get('ers_data_snapshot');
+    if(snap && (''+snap.version).split('.')[0] === (''+DATA.version).split('.')[0]){
+      DATA = snap; dataEl.textContent = JSON.stringify(DATA, null, 2);
+    }
+    
+// Migrate plain PIN to hashed PIN if necessary
+(async ()=>{
+  if(DATA.adminPIN && !DATA.adminPINHash){
+    try{
+      const h = await sha256Hex(DATA.adminPIN);
+      DATA.adminPINHash = h; delete DATA.adminPIN; persistData();
+    }catch(e){ /* ignore */ }
+  }
+})();
+
+STATE.screen = 'home';
+    render();
+
+  })();
+  
+// --- Service Worker registration for offline hosting ---
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(console.error);
+  });
+}
+
+</script>
+
+
+</body></html>
