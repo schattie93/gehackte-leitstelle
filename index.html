@@ -148,14 +148,9 @@
     }
     const appFB = firebase.initializeApp(FIREBASE_CFG);
     const db = firebase.database();
-    const auth = firebase.auth();
-    auth.onAuthStateChanged(u => console.log('Auth ok?', !!u));
-    auth.signInAnonymously().catch(e=>{
-      console.error('Auth error:', e);
-      alert('Firebase Auth Fehler: ' + e.message);
-    });
 
-    const rref = (path)=> db.ref(`rooms/${ROOM}/${path}`);
+    const auth = firebase.auth(); auth.signInAnonymously().catch(console.error);
+const rref = (path)=> db.ref(`rooms/${ROOM}/${path}`);
 
     // ---------- Bootstrap UI ----------
     const app = $('#app');
@@ -231,32 +226,20 @@
         route('home');
       };
       v.querySelector('#create').onclick = async ()=>{
-  try {
-    const id = (v.querySelector('#room-id').value||'').trim();
-    if(!id) return alert('Bitte Raumcode eingeben.');
-    ROOM = id; $('#hdr-room').textContent = ROOM;
-
-    // prüfen, ob es den Raum schon gibt
-    const snap = await rref('data').get();
-
-    if(!snap.exists()){
-      // Raum anlegen (Inhalte + Start-Fortschritt + Admin-PIN auf 9110)
-      const seed = seedData();
-      await rref('data').set(seed);
-      const teamA = (seed.teams.find(t=>t.id==='team-a')||{puzzles:[]}).puzzles.length;
-      const teamB = (seed.teams.find(t=>t.id==='team-b')||{puzzles:[]}).puzzles.length;
-      await rref('progress/team-a').set({index:0, solved:Array.from({length:teamA},()=>false), finished:false});
-      await rref('progress/team-b').set({index:0, solved:Array.from({length:teamB},()=>false), finished:false});
-      await rref('settings').set({ adminPINHash: await sha256Hex('9110') });
-    }
-
-    await attachLiveListeners();
-    route('admin-login');
-  } catch(e){
-    console.error('Create room error:', e);
-    alert('Fehler beim Erstellen des Raums:\n' + (e?.message || e));
-  }
-};
+        const id = (v.querySelector('#room-id').value||'').trim();
+        if(!id) return alert('Bitte Raumcode eingeben.');
+        ROOM = id; $('#hdr-room').textContent = ROOM;
+        // init empty shell if not exists
+        const snap = await rref('data').get();
+        if(!snap.exists()){
+          await rref('data').set(seedData());
+          await rref('progress/team-a').set({index:0, solved:[false,false], finished:false});
+          await rref('progress/team-b').set({index:0, solved:[false,false], finished:false});
+          await rref('settings').set({ adminPINHash: await sha256Hex('9110') });
+        }
+        await attachLiveListeners();
+        route('admin-login');
+      };
     }
 
     function viewHome(){
@@ -283,7 +266,8 @@
           ${liveDashboardHTML()}
         </section>
       `;
-      app.appendChild(v);
+      const __dash = el('section','panel'); __dash.setAttribute('data-live-dash','full'); __dash.innerHTML = liveDashboardHTML(false); v.appendChild(__dash);
+app.appendChild(v);
       v.querySelector('#start').onclick = ()=> route('team-select');
       v.querySelector('#status').onclick = ()=> route('waiting');
     }
@@ -367,7 +351,8 @@
           ${liveDashboardHTML(true)}
         </section>
       `;
-      app.appendChild(v);
+      const __dash = el('section','panel'); __dash.setAttribute('data-live-dash','compact'); __dash.innerHTML = liveDashboardHTML(true); v.appendChild(__dash);
+app.appendChild(v);
       setTimeout(()=> v.querySelector('#answer')?.focus(),0);
 
       v.querySelector('#hint').onclick = ()=>{
@@ -666,10 +651,20 @@
       rref('progress/team-b').on('value', snap => { PROG['team-b'] = snap.val(); refreshLive(); });
     }
     function refreshLive(){
-      // Update any live dashboard instances
-      app.querySelectorAll('.panel').forEach(p=>{
-        // no-op; views re-render on navigation; dashboards are simple
-      });
+  // Update all live dashboards
+  document.querySelectorAll('[data-live-dash]').forEach(d=>{
+    const compact = d.getAttribute('data-live-dash') === 'compact';
+    d.innerHTML = liveDashboardHTML(compact);
+  });
+  // Update Final button state live
+  const btn = document.querySelector('#go-final');
+  if(btn){
+    const allow = bothTeamsDone() && (DATA?.finale?.enabled);
+    btn.disabled = !allow;
+    btn.style.opacity = allow? '1' : '0.6';
+    btn.style.cursor = allow? 'pointer' : 'not-allowed';
+  }
+});
     }
 
     async function ensureProgressShape(teamId){
