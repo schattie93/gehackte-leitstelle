@@ -221,15 +221,29 @@
         </section>`;
       app.appendChild(v);
       v.querySelector('#join').onclick = async ()=>{
-        const id = (v.querySelector('#room-id').value||'').trim();
-        if(!id) return alert('Bitte Raumcode eingeben.');
-        ROOM = id;
-        $('#hdr-room').textContent = ROOM;
-        await attachLiveListeners();
-        // if data missing, hint to admin
-        if(!DATA) alert('Raum existiert noch nicht oder keine Daten – bitte Admin erstellt den Raum.');
-        route('home');
-      };
+  try {
+    const raw = (v.querySelector('#room-id').value||'').trim();
+    if(!raw){ alert('Bitte Raumcode eingeben.'); return; }
+    const id = raw.replace(/\s+/g,'');
+    ROOM = id;
+    const hdr = document.querySelector('#hdr-room'); if(hdr) hdr.textContent = ROOM;
+
+    // Erst prüfen, ob Raumdaten existieren
+    const snap = await rref('data').get();
+    if(!snap.exists()){
+      alert('Raum existiert noch nicht oder hat keine Daten – bitte zuerst "Neuen Raum erstellen" (Admin).');
+      return;
+    }
+
+    // Initialdaten setzen, dann Listener andocken, dann routen
+    DATA = snap.val();
+    await attachLiveListeners();
+    route('home');
+  } catch(e){
+    console.error('Join error:', e);
+    alert('Fehler beim Beitreten: ' + (e?.message || e));
+  }
+};
       v.querySelector('#create').onclick = async ()=>{
   try {
     const id = (v.querySelector('#room-id').value||'').trim();
