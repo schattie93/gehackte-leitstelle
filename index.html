@@ -148,12 +148,6 @@
     }
     const appFB = firebase.initializeApp(FIREBASE_CFG);
     const db = firebase.database();
-    const auth = firebase.auth();
-    auth.onAuthStateChanged(u => console.log('Auth ok?', !!u));
-    auth.signInAnonymously().catch(e=>{
-      console.error('Auth error:', e);
-      alert('Firebase Auth Fehler: ' + e.message);
-    });
 
     const rref = (path)=> db.ref(`rooms/${ROOM}/${path}`);
 
@@ -245,32 +239,20 @@
   }
 };
       v.querySelector('#create').onclick = async ()=>{
-  try {
-    const id = (v.querySelector('#room-id').value||'').trim();
-    if(!id) return alert('Bitte Raumcode eingeben.');
-    ROOM = id; $('#hdr-room').textContent = ROOM;
-
-    // prüfen, ob es den Raum schon gibt
-    const snap = await rref('data').get();
-
-    if(!snap.exists()){
-      // Raum anlegen (Inhalte + Start-Fortschritt + Admin-PIN auf 9110)
-      const seed = seedData();
-      await rref('data').set(seed);
-      const teamA = (seed.teams.find(t=>t.id==='team-a')||{puzzles:[]}).puzzles.length;
-      const teamB = (seed.teams.find(t=>t.id==='team-b')||{puzzles:[]}).puzzles.length;
-      await rref('progress/team-a').set({index:0, solved:Array.from({length:teamA},()=>false), finished:false});
-      await rref('progress/team-b').set({index:0, solved:Array.from({length:teamB},()=>false), finished:false});
-      await rref('settings').set({ adminPINHash: await sha256Hex('9110') });
-    }
-
-    await attachLiveListeners();
-    route('admin-login');
-  } catch(e){
-    console.error('Create room error:', e);
-    alert('Fehler beim Erstellen des Raums:\n' + (e?.message || e));
-  }
-};
+        const id = (v.querySelector('#room-id').value||'').trim();
+        if(!id) return alert('Bitte Raumcode eingeben.');
+        ROOM = id; $('#hdr-room').textContent = ROOM;
+        // init empty shell if not exists
+        const snap = await rref('data').get();
+        if(!snap.exists()){
+          await rref('data').set(seedData());
+          await rref('progress/team-a').set({index:0, solved:[false,false], finished:false});
+          await rref('progress/team-b').set({index:0, solved:[false,false], finished:false});
+          await rref('settings').set({ adminPINHash: await sha256Hex('9110') });
+        }
+        await attachLiveListeners();
+        route('admin-login');
+      };
     }
 
     function viewHome(){
@@ -703,8 +685,94 @@
 
     // ---------- Puzzle Editor Modal ----------
     function editPuzzle(team, puzzle, index){
-      const isNew = !puzzle;
-      puzzle = puzzle || { id: uid(team.id+'-pz'), title:'Neues Rätsel', body:'', answers:[], hint:'', input:'text', afterText:'' };
+  const isNew = !puzzle;
+  puzzle = puzzle || { id: uid(team.id+'-pz'), title:'Neues Rätsel', body:'', answers:[], hint:'', input:'text', afterText:'' };
+
+  // Overlay
+  const m = el('div');
+  m.style.position = 'fixed';
+  m.style.inset = '0';
+  m.style.zIndex = '9999';
+  m.style.background = 'rgba(0,0,0,.6)';
+  m.style.display = 'flex';
+  m.style.alignItems = 'flex-start';
+  m.style.justifyContent = 'center';
+  m.style.padding = '24px';
+  m.style.overflow = 'auto';
+
+  // Modal panel
+  const panel = document.createElement('div');
+  panel.className = 'panel';
+  panel.style.width = 'min(960px, calc(100vw - 32px))';
+  panel.style.maxHeight = '90vh';
+  panel.style.overflow = 'auto';
+  panel.style.position = 'relative';
+
+  // Sticky header for actions
+  const header = document.createElement('div');
+  header.className = 'row';
+  header.style.position = 'sticky';
+  header.style.top = '0';
+  header.style.zIndex = '2';
+  header.style.background = 'linear-gradient(180deg, rgba(14,26,44,.96), rgba(9,16,28,.92))';
+  header.style.borderBottom = '1px solid rgba(255,255,255,.12)';
+  header.style.margin = '-20px -20px 12px -20px';
+  header.style.padding = '16px 20px';
+  header.style.alignItems = 'center';
+  header.style.justifyContent = 'space-between';
+  header.innerHTML = `
+    <div class="title" style="margin:0">${isNew?'Rätsel hinzufügen':'Rätsel bearbeiten'}</div>
+    <div class="row" style="flex:0 0 auto;gap:8px">
+      <button class="btn" id="save">Speichern</button>
+      <button class="btn secondary" id="x">Schließen</button>
+    </div>
+  `;
+
+  const content = document.createElement('div');
+  content.innerHTML = `
+    <div class="spc"></div>
+    <label>Titel</label><input id="t" value="${escapeAttr(puzzle.title)}"/>
+    <div class="spc"></div>
+    <label>Text (Markdown)</label><textarea id="b">${escapeHTML(puzzle.body||'')}</textarea>
+    <div class="spc"></div>
+    <div class="row">
+      <div><label>Lösung(en) (eine pro Zeile)</label><textarea id="a">${escapeHTML((puzzle.answers||[]).join('\n'))}</textarea></div>
+      <div><label>Eingabefeld</label>
+        <select id="in">
+          <option value="text" ${puzzle.input==='text'?'selected':''}>Text/Code</option>
+          <option value="number" ${puzzle.input==='number'?'selected':''}>Nur Zahlen</option>
+        </select>
+      </div>
+    </div>
+    <div class="spc"></div>
+    <label>Tipp (optional)</label><input id="h" value="${escapeAttr(puzzle.hint||'')}"/>
+    <div class="spc"></div>
+    <label>Zwischentext nach Lösung (HTML erlaubt)</label><textarea id="aft">${escapeHTML(puzzle.afterText||'')}</textarea>
+    <div class="spc"></div>
+  `;
+
+  panel.appendChild(header);
+  panel.appendChild(content);
+  m.appendChild(panel);
+
+  // Attach & wire up buttons
+  document.body.appendChild(m);
+  m.querySelector('#x').onclick = ()=> m.remove();
+  m.querySelector('#save').onclick = async ()=>{
+    const P = {
+      id: puzzle.id || uid(team.id+'-pz'),
+      title: content.querySelector('#t').value,
+      body: content.querySelector('#b').value,
+      answers: (content.querySelector('#a').value||'').split(/\\n/).map(s=>s.trim()).filter(Boolean),
+      hint: content.querySelector('#h').value,
+      input: content.querySelector('#in').value,
+      afterText: content.querySelector('#aft').value
+    };
+    if(isNew){ team.puzzles.push(P); } else { team.puzzles[index]=P; }
+    await rref('data').set(DATA); await ensureProgressShape(team.id);
+    m.remove();
+  };
+};
       const m = el('div'); m.style.position='fixed'; m.style.inset='0'; m.style.zIndex=50; m.style.background='rgba(0,0,0,.6)';
       m.innerHTML = `
         <div class="panel" style="max-width:960px;margin:6vh auto">
