@@ -755,7 +755,7 @@ button.panel[data-team] .small.muted{ margin-top: -2px; display: inline-block; }
       return `
         <div class="grid ${compact?'':'cols-2'}">
           <div class="panel" style="background:linear-gradient(180deg, rgba(12,20,34,.9), rgba(8,14,24,.85))">
-            <div class="row" style="justify-content:space-between;align-items:center">
+            <div class="row" style="justify-content:space-between;align-items:flex-start">
               <div><div class="kbd">${escapeHTML(ta?.name||'Team Alpha')}</div><div class="small muted">${as}/${at} Rätsel</div></div>
               <div class="pill ${pa.finished?'':'muted'}">${pa.finished?'bereit fürs Finale':'arbeitet…'}</div>
             </div>
@@ -763,7 +763,7 @@ button.panel[data-team] .small.muted{ margin-top: -2px; display: inline-block; }
             <div class="progress"><div style="width:${pct(as,at)}%"></div></div>
           </div>
           <div class="panel" style="background:linear-gradient(180deg, rgba(12,20,34,.9), rgba(8,14,24,.85))">
-            <div class="row" style="justify-content:space-between;align-items:center">
+            <div class="row" style="justify-content:space-between;align-items:flex-start">
               <div><div class="kbd">${escapeHTML(tb?.name||'Team Bravo')}</div><div class="small muted">${bs}/${bt} Rätsel</div></div>
               <div class="pill ${pb.finished?'':'muted'}">${pb.finished?'bereit fürs Finale':'arbeitet…'}</div>
             </div>
