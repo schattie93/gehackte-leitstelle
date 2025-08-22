@@ -901,46 +901,7 @@ button.panel[data-team] .small.muted{ margin-top: -2px; display: inline-block; }
       return '';
     }
     // RTW-Illustration: ohne rechten Kasten, symmetrische Räder, Blaulicht (doppelter Puls)
-// RTW-Illustration: ohne rechten Kasten, symmetrische Räder, Blaulicht-Puls,
-// und: Johanniter-Wappen statt einfachem Kreuz
-// RTW-Illustration: ohne rechten Kasten, symmetrische Räder, Blaulicht-Puls
-// Johanniter/Malteser: NUR rote Außenkontur (kein Kreis, keine Füllung)
-// RTW-Illustration: ohne rechten Kasten, symmetrische Räder, Blaulicht-Puls
-// Malteserkreuz: NUR rote Außenkontur (korrekte Form, dünnere Linien)
-// RTW-Illustration inkl. Malteserkreuz-OUTLINE (korrekte Geometrie)
-// RTW-Illustration mit korrekt konstruiertem Malteserkreuz (nur Outline)
-// RTW-Illustration mit korrekt konstruiertem Malteserkreuz (nur Outline)
 function artAmbulance(){
-  // Maltese-Outline mit "Schultern": pro 45°-Sektor
-  // innerer Einzug (rInner) -> Schulter (rShoulder, +eps) -> Spitze (R, +22.5°)
-  // -> Schulter (rShoulder, +45°-eps) -> innerer Einzug (rInner, +45°)
-  function malteseOutlinePoints(cx, cy, R=24, rShoulder=22, rInner=9, eps=14){
-    const pts = [];
-    for(let i=0;i<8;i++){
-      const start = i*45;
-      const A  = start;             // inner notch (Kardinal)
-      const S1 = start + eps;       // Schulter 1
-      const T  = start + 22.5;      // Spitze (Diagonal)
-      const S2 = start + 45 - eps;  // Schulter 2
-      const B  = start + 45;        // nächster inner notch
-
-      // Helper
-      const P = (deg, rad)=>{
-        const a = (deg - 90) * Math.PI/180; // -90°: 0° zeigt nach oben
-        return [(cx + rad*Math.cos(a)).toFixed(1), (cy + rad*Math.sin(a)).toFixed(1)];
-      };
-
-      [ P(A, rInner), P(S1, rShoulder), P(T, R), P(S2, rShoulder), P(B, rInner) ]
-        .forEach(([x,y])=> pts.push(`${x},${y}`));
-    }
-    return pts.join(' ');
-  }
-
-  // Position & Geometrie (bei Bedarf leicht anpassen)
-  const cx = 225, cy = 130;
-  const R = 24, rShoulder = 22, rInner = 9, eps = 14;
-  const maltPoints = malteseOutlinePoints(cx, cy, R, rShoulder, rInner, eps);
-
   return `<svg viewBox="0 0 640 240" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-label="RTW">
     <defs>
       <linearGradient id="g1" x1="0" x2="1">
@@ -953,31 +914,44 @@ function artAmbulance(){
       </filter>
     </defs>
 
-    <!-- Hintergrundkarte -->
+    <!-- weicher Kartenhintergrund -->
     <rect x="0" y="0" width="640" height="240" fill="url(#g1)"/>
 
     <g filter="url(#glow)">
-      <!-- Fahrzeugkörper -->
-      <rect x="90" y="90" width="270" height="80" rx="12" fill="#0e1a2c" stroke="#00ffc6"/>
+      <!-- EIN Fahrzeugkörper (rechter Kasten entfernt) -->
+      <rect id="body" x="90" y="90" width="270" height="80" rx="12"
+            fill="#0e1a2c" stroke="#00ffc6" />
 
-      <!-- Räder -->
-      <circle cx="150" cy="180" r="20" fill="#121a2b" stroke="#00ffc6"/>
-      <circle cx="300" cy="180" r="20" fill="#121a2b" stroke="#7a5cff"/>
+      <!-- Räder: links & rechts symmetrisch im Body -->
+      <!-- links: 90 + 60 = 150 -->
+      <circle id="wheel-left" cx="150" cy="180" r="20"
+              fill="#121a2b" stroke="#00ffc6"/>
+      <!-- rechts: Body-Rechts 360 - 60 = 300 -->
+      <circle id="wheel-right" cx="300" cy="180" r="20"
+              fill="#121a2b" stroke="#7a5cff"/>
 
-      <!-- Blaulicht (Doppel-Puls) -->
-      <rect x="120" y="70" width="25" height="20" rx="4" fill="#5ac8ff" stroke="#bfe6ff" stroke-width="2"/>
+      <!-- Blaulicht: Doppel-Puls -->
+      <!-- statischer Lampenkörper -->
+      <rect id="beacon" x="120" y="70" width="25" height="20" rx="4"
+            fill="#5ac8ff" stroke="#bfe6ff" stroke-width="2"/>
+      <!-- pulsierende Aura (doppelter Blitz) -->
       <circle cx="132.5" cy="80" r="12" fill="#5ac8ff" opacity="0">
-        <animate attributeName="r" values="12;32;12;32;12" keyTimes="0;0.18;0.36;0.54;1" dur="1.4s" repeatCount="indefinite"/>
-        <animate attributeName="opacity" values="0;.9;0;.9;0" keyTimes="0;0.18;0.36;0.54;1" dur="1.4s" repeatCount="indefinite"/>
+        <!-- Radius pulst: klein -> groß -> klein -> groß -> klein -->
+        <animate attributeName="r"
+                 values="12;32;12;32;12"
+                 keyTimes="0;0.18;0.36;0.54;1"
+                 dur="1.4s"
+                 repeatCount="indefinite"/>
+        <!-- Sichtbarkeit passend zum Doppelblitz -->
+        <animate attributeName="opacity"
+                 values="0;.9;0;.9;0"
+                 keyTimes="0;0.18;0.36;0.54;1"
+                 dur="1.4s"
+                 repeatCount="indefinite"/>
       </circle>
 
-      <!-- Malteserkreuz: NUR rote Außenkontur -->
-      <polygon points="${maltPoints}"
-               fill="none"
-               stroke="#e6002e"
-               stroke-width="2"
-               stroke-linejoin="miter"
-               stroke-miterlimit="2"/>
+      <!-- Sanitätskreuz -->
+      <path d="M130 120h70 M165 100v40" stroke="#ff3b81" stroke-width="6" stroke-linecap="round"/>
     </g>
   </svg>`;
 }
