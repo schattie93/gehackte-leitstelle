@@ -903,7 +903,24 @@ button.panel[data-team] .small.muted{ margin-top: -2px; display: inline-block; }
     // RTW-Illustration: ohne rechten Kasten, symmetrische Räder, Blaulicht (doppelter Puls)
 // RTW-Illustration: ohne rechten Kasten, symmetrische Räder, Blaulicht-Puls,
 // und: Johanniter-Wappen statt einfachem Kreuz
+// RTW-Illustration: ohne rechten Kasten, symmetrische Räder, Blaulicht-Puls
+// Johanniter/Malteser: NUR rote Außenkontur (kein Kreis, keine Füllung)
 function artAmbulance(){
+  // Punkte für das 8-spitzige Malteserkreuz (nur Outline)
+  const malteserPoints = (() => {
+    const cx = 225, cy = 130;   // Zentrum des Wappens
+    const R  = 26;              // Außenradius der Spitzen
+    const r  = 10;              // Innenradius der Einkerbung
+    const pts = [];
+    // 16 Punkte: ab -90° (oben), Schritt 22.5°, alternierend R/r
+    for (let i = 0; i < 16; i++) {
+      const ang = (-90 + i * 22.5) * Math.PI / 180;
+      const rad = (i % 2 === 0) ? R : r;
+      pts.push((cx + rad * Math.cos(ang)).toFixed(1) + ',' + (cy + rad * Math.sin(ang)).toFixed(1));
+    }
+    return pts.join(' ');
+  })();
+
   return `<svg viewBox="0 0 640 240" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-label="RTW">
     <defs>
       <linearGradient id="g1" x1="0" x2="1">
@@ -920,39 +937,31 @@ function artAmbulance(){
     <rect x="0" y="0" width="640" height="240" fill="url(#g1)"/>
 
     <g filter="url(#glow)">
-      <!-- EIN Fahrzeugkörper (rechter Kasten entfernt) -->
-      <rect id="body" x="90" y="90" width="270" height="80" rx="12"
-            fill="#0e1a2c" stroke="#00ffc6" />
+      <!-- Fahrzeugkörper -->
+      <rect x="90" y="90" width="270" height="80" rx="12" fill="#0e1a2c" stroke="#00ffc6"/>
 
-      <!-- Räder: links & rechts symmetrisch im Body -->
-      <circle id="wheel-left"  cx="150" cy="180" r="20" fill="#121a2b" stroke="#00ffc6"/>
-      <circle id="wheel-right" cx="300" cy="180" r="20" fill="#121a2b" stroke="#7a5cff"/>
+      <!-- Räder symmetrisch -->
+      <circle cx="150" cy="180" r="20" fill="#121a2b" stroke="#00ffc6"/>
+      <circle cx="300" cy="180" r="20" fill="#121a2b" stroke="#7a5cff"/>
 
       <!-- Blaulicht: Doppel-Puls -->
-      <rect id="beacon" x="120" y="70" width="25" height="20" rx="4"
-            fill="#5ac8ff" stroke="#bfe6ff" stroke-width="2"/>
+      <rect x="120" y="70" width="25" height="20" rx="4" fill="#5ac8ff" stroke="#bfe6ff" stroke-width="2"/>
       <circle cx="132.5" cy="80" r="12" fill="#5ac8ff" opacity="0">
         <animate attributeName="r" values="12;32;12;32;12" keyTimes="0;0.18;0.36;0.54;1" dur="1.4s" repeatCount="indefinite"/>
         <animate attributeName="opacity" values="0;.9;0;.9;0" keyTimes="0;0.18;0.36;0.54;1" dur="1.4s" repeatCount="indefinite"/>
       </circle>
 
-      <!-- Johanniter-Wappen: roter Rundschild mit weißem achtspitzigen Kreuz -->
-      <!-- Position mittig im Kasten -->
-      <g id="johanniter" transform="translate(225,130)">
-        <!-- roter Kreis mit dünner weißer Kontur -->
-        <circle r="26" fill="#e6002e" stroke="#ffffff" stroke-width="2"/>
-        <!-- weiße, stilisierte achtspitzige Johanniter-/Malteser-Kreuzform -->
-        <!-- aufgebaut aus vier identischen "Armen", im 90°-Raster rotiert -->
-        <g fill="#ffffff">
-          <path d="M0,-3 L7,-14 L0,-22 L-7,-14 Z"/>
-          <g transform="rotate(90)"><path d="M0,-3 L7,-14 L0,-22 L-7,-14 Z"/></g>
-          <g transform="rotate(180)"><path d="M0,-3 L7,-14 L0,-22 L-7,-14 Z"/></g>
-          <g transform="rotate(270)"><path d="M0,-3 L7,-14 L0,-22 L-7,-14 Z"/></g>
-        </g>
-      </g>
+      <!-- Malteserkreuz: NUR Außenkontur (rot) -->
+      <polygon points="${malteserPoints}"
+               fill="none"
+               stroke="#e6002e"
+               stroke-width="4"
+               stroke-linejoin="round"
+               stroke-linecap="round"/>
     </g>
   </svg>`;
 }
+
 
 
     function artConsole(){
