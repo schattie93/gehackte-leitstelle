@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Rettungsleitstelle – Escape (ONLINE)</title>
   <meta name="theme-color" content="#070b10" />
-  <meta name="description" content="Online Escape Room – Rettung... Teams, Live-Fortschritt, Finale bei beidseitigem Abschluss." />
+  <meta name="description" content="Online Escape Room – Rettungsdienst Leitstelle gehackt. Zwei Teams, Live-Fortschritt, Finale bei beidseitigem Abschluss." />
   <!-- Ultra neon cyber style -->
   <style>
     :root{
       --bg:#070b10; --panel:#0b1220; --panel-2:#0e1a2c;
       --accent:#00ffc6; --accent-2:#7a5cff; --accent-3:#ff3b81;
-      --text:#e6fff7; --muted:#9ad9c9; --danger:#ff6b6b;
+      --text:#e6fff7; --muted:#9ad9c9; --danger:#ff6b6b; --ok:#7dff9b; --warn:#ffd166;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -44,6 +44,7 @@
       background: radial-gradient(100% 100% at 30% 20%, rgba(0,255,198,.25), rgba(122,92,255,.15) 55%, rgba(255,59,129,.12));
       border:1px solid rgba(255,255,255,.18); box-shadow:0 10px 40px rgba(0,0,0,.5), inset 0 0 40px rgba(0,255,198,.08)}
     .sig{font-weight:900; letter-spacing:.1em; text-transform:uppercase; font-size:1rem}
+    .badge{border:1px solid rgba(0,255,198,.35); color:var(--accent); padding:.15rem .5rem; border-radius:999px; font-size:.75rem}
     .panel{background:linear-gradient(180deg, rgba(11,18,32,.95), rgba(11,18,32,.8));
       border:1px solid rgba(255,255,255,.12); border-radius:18px; padding:20px; box-shadow:0 20px 80px rgba(0,0,0,.45), inset 0 0 80px rgba(0,255,198,.07)}
     .hero{border:1px dashed rgba(255,255,255,.15);
@@ -73,16 +74,25 @@
     .progress > div{height:100%; background:linear-gradient(90deg,var(--accent), var(--accent-3)); width:0%}
     .muted{color:var(--muted)} .small{font-size:.85rem}
     .note{border:1px dashed rgba(255,255,255,.18); padding:.6rem .8rem; border-radius:12px; color:var(--muted)}
-    .error{padding:.6rem .8rem; background:#2b0f13; border:1px solid #ff6b6b; border-radius:12px}
-    .success{padding:.6rem .8rem; background:#0f2b17; border:1px solid #69ff9c; border-radius:12px}
-    .error-box{position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#2b0f13;border:1px solid #ff6b6b;color:#ffd6d6;border-radius:12px;padding:12px 14px;font-family:ui-monospace,monospace}
-    /* Modal (Fix) */
-    .modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:9999; display:flex; align-items:flex-start; justify-content:center; padding:24px; overflow:auto;}
-    .modal-panel{max-height:90vh; width:min(960px, calc(100vw - 32px)); overflow:auto; position:relative;}
-    .modal-header{position:sticky; top:0; z-index:2; background:linear-gradient(180deg, rgba(14,26,44,.96), rgba(9,16,28,.92)); border-bottom:1px solid rgba(255,255,255,.12); margin:-20px -20px 12px -20px; padding:16px 20px;}
+    .success{border:1px solid rgba(125,255,155,.35); background:linear-gradient(180deg, rgba(125,255,155,.12), rgba(125,255,155,.06)); color:#d5ffe0; border-radius:12px; padding:.7rem .9rem}
+    .warning{border:1px solid rgba(255,209,102,.35); background:linear-gradient(180deg, rgba(255,209,102,.12), rgba(255,209,102,.06)); color:#ffe9ab; border-radius:12px; padding:.7rem .9rem}
+    .error{border:1px solid rgba(255,107,107,.35); background:linear-gradient(180deg, rgba(255,107,107,.12), rgba(255,107,107,.06)); color:#ffd6d6; border-radius:12px; padding:.7rem .9rem}
+    .card p{margin:0 0 .8rem} .card p:last-child{margin-bottom:0}
+    /* animated ECG line as divider */
+    .ecg{position:relative;height:26px;overflow:hidden}
+    .ecg:before{content:""; position:absolute; inset:0; background:
+      linear-gradient(90deg, transparent 0, transparent 35%, rgba(0,255,198,.5) 40%, rgba(0,255,198,.5) 60%, transparent 65%, transparent),
+      linear-gradient(180deg, transparent 40%, rgba(0,255,198,.2) 40%, rgba(0,255,198,.2) 41%, transparent 41%);
+      background-size: 200% 100%, 100% 100%;
+      animation: scan 3.2s linear infinite}
+    @keyframes scan{0%{background-position:200% 0,0 0}100%{background-position:-200% 0,0 0}}
+    /* Illustrations (SVG containers) */
+    .art{display:grid;place-items:center;min-height:120px;border:1px solid rgba(255,255,255,.12);border-radius:16px;
+      background:linear-gradient(145deg, rgba(0,255,198,.06), rgba(122,92,255,.06));}
+    .hidden{display:none}
   </style>
 
-  <!-- Firebase SDKs -->
+  <!-- Firebase SDKs (compat for simplicity) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
@@ -90,11 +100,12 @@
 <body class="bg-grid scanlines">
   <div class="app" id="app"></div>
 
+  <!-- ONLINE DATA lives in Firebase under /rooms/{roomId} -->
   <script>
   (function(){
     'use strict';
 
-    // ====== Firebase-Konfiguration (deine Werte) ======
+    // ====== CONFIG ======
     const FIREBASE_CFG = {
       apiKey: "AIzaSyCyBP1BnM_VUtSFCDMQNxKYyTY5Ga7XIrI",
       authDomain: "gehackte-leitstelle.firebaseapp.com",
@@ -104,104 +115,544 @@
       messagingSenderId: "834048574525",
       appId: "1:834048574525:web:d975375eeceac7aea35654"
     };
-
-    // ---------- Error-Overlay ----------
-    function showErrorBox(msg){
-      try{
-        const b = document.createElement('div');
-        b.className = 'error-box';
-        b.textContent = 'Fehler: ' + msg;
-        document.body.appendChild(b);
-        setTimeout(()=> b.remove(), 12000);
-      }catch(e){}
-    }
-    window.addEventListener('error', e => showErrorBox(e.message || String(e)));
-    window.addEventListener('unhandledrejection', e => showErrorBox(e?.reason?.message || String(e?.reason || e)));
-
-    // ---------- Firebase ----------
-    const appFB = firebase.initializeApp(FIREBASE_CFG);
-    const db = firebase.database();
-    const auth = firebase.auth();
-    auth.signInAnonymously().catch(e=>showErrorBox('Auth: ' + e.message));
-    auth.onAuthStateChanged(u => console.log('Auth ok?', !!u));
+    // ====== /CONFIG ======
 
     // ---------- Utils ----------
     const $ = s => document.querySelector(s);
     const el = (t,cls)=>{const n=document.createElement(t); if(cls) n.className=cls; return n;}
     const escapeHTML = s => String(s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
     const escapeAttr = s => String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-    const norm = v => String(v||'').trim().replace(/\s+/g,''); // alte Codes bleiben gültig (kein forced lowercase)
-    function nowISO(){ const d=new Date(); return d.toISOString().replaceAll(':','-').slice(0,19); }
-
-    // Mini-Markdown
-    function renderMarkdown(src){
-      if(!src) return '';
+    const nowISO = ()=> new Date().toISOString().replace(/:/g,'-').slice(0,19);
+    const md = (src)=>{ if(!src) return '';
       let out = escapeHTML(src);
-      out = out.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-      out = out.replace(/\*(.+?)\*/g, '<i>$1</i>');
-      out = out.replace(/(\r?\n){2,}/g, '</p><p>');
-      out = out.replace(/\r?\n/g, '<br>');
-      return '<p>'+out+'</p>';
-    }
-
-    async function sha256Hex(str){
-      const buf = new TextEncoder().encode(str);
-      const hash = await crypto.subtle.digest('SHA-256', buf);
-      return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
-    }
-    const uid = (p='id') => p + '-' + Math.random().toString(36).slice(2,10);
+      out = out.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+      out = out.replace(/\*(.+?)\*/g,'<i>$1</i>');
+      out = out.replace(/(\r?\n){2,}/g,'</p><p>');
+      out = out.replace(/\r?\n/g,'<br>');
+      return '<p>'+out+'</p>'; };
+    const norm = v => String(v||'').trim().toLowerCase().replace(/\s+/g,'');
+    async function sha256Hex(s){ const b=new TextEncoder().encode(s); const h=await crypto.subtle.digest('SHA-256',b); return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+    const sleep = ms => new Promise(r=>setTimeout(r,ms));
 
     // ---------- App State ----------
-    let ROOM = '';
-    let TEAM = '';
+    let ROOM = null;  // roomId string
+    let TEAM = null;  // 'team-a' | 'team-b' | null
     let ADMIN = false;
-    let DATA = null;
-    let PROG = { 'team-a': null, 'team-b': null };
+    let DATA = null;  // room data (title, teams, finale, texts)
+    let PROG = { 'team-a':null, 'team-b':null }; // live progress
+    let AFTERTEXT_BUFFER = ''; // local per-solve interstitial
 
-    const rref = path => db.ref(`rooms/${ROOM}/${path}`);
+    // ---------- Firebase ----------
+    if(!FIREBASE_CFG.apiKey || FIREBASE_CFG.apiKey.includes('YOUR_')){
+      console.warn('Bitte Firebase-Konfiguration eintragen!');
+    }
+    const appFB = firebase.initializeApp(FIREBASE_CFG);
+    const db = firebase.database();
+    const auth = firebase.auth();
+    auth.onAuthStateChanged(u => console.log('Auth ok?', !!u));
+    auth.signInAnonymously().catch(e=>{
+      console.error('Auth error:', e);
+      alert('Firebase Auth Fehler: ' + e.message);
+    });
+
+    const rref = (path)=> db.ref(`rooms/${ROOM}/${path}`);
+
+    // ---------- Bootstrap UI ----------
+    const app = $('#app');
+    renderHeader();
+    route('room');
+
+    function renderHeader(){
+      const h = el('header');
+      h.innerHTML = ''
+        + '<div class="brand">'
+        +   '<div class="logo">'+icon('siren',28)+'</div>'
+        +   '<div><div class="sig">Rettungsleitstelle · Online</div>'
+        +   `<div class="small muted">Raum: <span id="hdr-room">—</span></div></div>`
+        + '</div>'
+        + '<div class="row" style="flex:0 0 auto;gap:8px">'
+        +   '<button class="btn ghost" id="btn-home">Start</button>'
+        +   '<button class="btn secondary" id="btn-admin">Admin</button>'
+        + '</div>';
+      app.appendChild(h);
+      h.querySelector('#btn-home').onclick = ()=> route('home');
+      h.querySelector('#btn-admin').onclick = ()=> route(ADMIN? 'admin' : 'admin-login');
+    }
+
+    function route(screen){
+      // Clear main view (keep header)
+      app.querySelectorAll('main, section.view').forEach(n=>n.remove());
+      const hdrRoom = $('#hdr-room'); if(hdrRoom) hdrRoom.textContent = ROOM || '—';
+
+      if(screen==='room') return viewRoom();
+      if(screen==='home') return viewHome();
+      if(screen==='team-select') return viewTeamSelect();
+      if(screen==='intro') return viewIntro();
+      if(screen==='puzzle') return viewPuzzle();
+      if(screen==='interstitial') return viewInterstitial();
+      if(screen==='waiting') return viewWaiting();
+      if(screen==='final') return viewFinal();
+      if(screen==='admin-login') return viewAdminLogin();
+      if(screen==='admin') return viewAdmin();
+    }
+
+    // ---------- Views ----------
+    function viewRoom(){
+      const v = el('main','view'); v.innerHTML = `
+        <section class="panel hero">
+          <p class="badge">ONLINE</p>
+          <h1 class="title">Leitstelle kompromittiert – Live-Einsatz</h1>
+          <p class="subtitle">Wähle einen Raumcode (z.B. <span class="kbd">RL2025</span>). Teams sehen den Fortschritt gegenseitig. Finale wird frei, wenn <b>beide</b> Teams fertig sind.</p>
+          <div class="spc"></div>
+          <div class="grid cols-2">
+            <div class="card">
+              <label>Raumcode</label>
+              <input id="room-id" placeholder="z. B. RL2025" maxlength="24"/>
+              <div class="spc"></div>
+              <div class="row">
+                <button class="btn" id="join">Raum beitreten</button>
+                <button class="btn secondary" id="create">Neuen Raum erstellen</button>
+              </div>
+              <div class="spc"></div>
+              <div class="note small">Tipp: Leicht merken, aber nicht zu kurz. Admin richtet Inhalte & PIN pro Raum ein.</div>
+            </div>
+            <div class="art" aria-hidden="true">${artAmbulance()}</div>
+          </div>
+        </section>`;
+      app.appendChild(v);
+      v.querySelector('#join').onclick = async ()=>{
+  try {
+    const raw = (v.querySelector('#room-id').value||'').trim();
+    if(!raw){ alert('Bitte Raumcode eingeben.'); return; }
+    const id = raw.replace(/\s+/g,'');
+    ROOM = id;
+    const hdr = document.querySelector('#hdr-room'); if(hdr) hdr.textContent = ROOM;
+
+    // Erst prüfen, ob Raumdaten existieren
+    const snap = await rref('data').get();
+    if(!snap.exists()){
+      alert('Raum existiert noch nicht oder hat keine Daten – bitte zuerst "Neuen Raum erstellen" (Admin).');
+      return;
+    }
+
+    // Initialdaten setzen, dann Listener andocken, dann routen
+    DATA = snap.val();
+    await attachLiveListeners();
+    route('home');
+  } catch(e){
+    console.error('Join error:', e);
+    alert('Fehler beim Beitreten: ' + (e?.message || e));
+  }
+};
+      v.querySelector('#create').onclick = async ()=>{
+  try {
+    const id = (v.querySelector('#room-id').value||'').trim();
+    if(!id) return alert('Bitte Raumcode eingeben.');
+    ROOM = id; $('#hdr-room').textContent = ROOM;
+
+    // prüfen, ob es den Raum schon gibt
+    const snap = await rref('data').get();
+
+    if(!snap.exists()){
+      // Raum anlegen (Inhalte + Start-Fortschritt + Admin-PIN auf 9110)
+      const seed = seedData();
+      await rref('data').set(seed);
+      const teamA = (seed.teams.find(t=>t.id==='team-a')||{puzzles:[]}).puzzles.length;
+      const teamB = (seed.teams.find(t=>t.id==='team-b')||{puzzles:[]}).puzzles.length;
+      await rref('progress/team-a').set({index:0, solved:Array.from({length:teamA},()=>false), finished:false});
+      await rref('progress/team-b').set({index:0, solved:Array.from({length:teamB},()=>false), finished:false});
+      await rref('settings').set({ adminPINHash: await sha256Hex('9110') });
+    }
+
+    await attachLiveListeners();
+    route('admin-login');
+  } catch(e){
+    console.error('Create room error:', e);
+    alert('Fehler beim Erstellen des Raums:\n' + (e?.message || e));
+  }
+};
+    }
+
+    function viewHome(){
+      if(!ROOM) return route('room');
+      const v = el('main','view'); v.innerHTML = `
+        <section class="panel hero">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div>
+              <h2 class="title">${escapeHTML(DATA?.title || 'Rettungsleitstelle · Online')}</h2>
+              <p class="subtitle">Zwei Teams arbeiten parallel. Fortschritt wird live synchronisiert.</p>
+            </div>
+            <div class="pill">Status: <span class="kbd">${DATA? 'aktiv' : 'wartet...'}</span></div>
+          </div>
+          <div class="spc"></div>
+          <div class="ecg"></div>
+          <div class="spc"></div>
+          <div class="row">
+            <button class="btn" id="start">Teamauswahl</button>
+            <button class="btn ghost" id="status">Live-Status</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          ${liveDashboardHTML()}
+        </section>
+      `;
+      app.appendChild(v);
+      v.querySelector('#start').onclick = ()=> route('team-select');
+      v.querySelector('#status').onclick = ()=> route('waiting');
+    }
+
+    function viewTeamSelect(){
+      if(!ROOM) return route('room');
+      const v = el('main','view');
+      v.innerHTML = `
+        <section class="panel">
+          <div class="title">Teamauswahl</div>
+          <p class="muted">Wählt euer Team. Danach startet die Einleitung.</p>
+          <div class="grid cols-2">
+            ${(DATA?.teams||[]).map(t=>`
+              <button class="panel" style="text-align:left; cursor:pointer" data-team="${escapeAttr(t.id)}">
+                <div class="row" style="justify-content:space-between;align-items:center">
+                  <div>
+                    <div class="kbd" style="font-size:1.1rem">${escapeHTML(t.name)}</div>
+                    <div class="small muted">${t.puzzles.length} Rätsel</div>
+                  </div>
+                  <div class="pill">${t.id==='team-a'?'ALPHA':'BRAVO'}</div>
+                </div>
+              </button>
+            `).join('')}
+          </div>
+        </section>
+        <section class="art" aria-hidden="true">${artConsole()}</section>
+      `;
+      app.appendChild(v);
+      v.querySelectorAll('[data-team]').forEach(b=> b.onclick = async ()=>{
+        TEAM = b.getAttribute('data-team');
+        await ensureProgressShape(TEAM);
+        route('intro');
+      });
+    }
+
+    function viewIntro(){
+      const v = el('main','view'); const intro = DATA?.introText || '';
+      v.innerHTML = `
+        <section class="panel">
+          <div class="title">Einleitung</div>
+          <div class="card">${md(intro)}</div>
+          <div class="spc"></div>
+          <div class="row">
+            <button class="btn" id="go">Los geht’s</button>
+            <button class="btn secondary" id="back">Zurück</button>
+          </div>
+        </section>`;
+      app.appendChild(v);
+      v.querySelector('#go').onclick = ()=> route('puzzle');
+      v.querySelector('#back').onclick = ()=> route('team-select');
+    }
+
+    function viewPuzzle(){
+      const team = getTeam(); if(!team) return route('team-select');
+      const prog = PROG[TEAM]; if(!prog) return route('team-select');
+      const idx = Math.min(prog.index, team.puzzles.length-1);
+      const done = (prog.solved||[]).filter(Boolean).length === team.puzzles.length;
+      if(done){ route('waiting'); return; }
+      const pz = team.puzzles[idx];
+
+      const v = el('main','view');
+      v.innerHTML = `
+        <section class="panel">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div>
+              <div class="title">${escapeHTML(pz.title)}</div>
+              <div class="small muted">${escapeHTML(team.name)} · Rätsel ${idx+1} von ${team.puzzles.length}</div>
+            </div>
+            <div class="pill">Fortschritt: ${(prog.solved||[]).filter(Boolean).length}/${team.puzzles.length}</div>
+          </div>
+          <div class="spc"></div>
+          <div class="card">${md(pz.body||'')}</div>
+          <div class="spc"></div>
+          <label>Deine Lösung</label>
+          <input id="answer" placeholder="Code eingeben…"/>
+          <div class="spc"></div>
+          <div class="row"><button class="btn" id="check">Lösung prüfen</button><button class="btn secondary" id="hint">Tipp</button></div>
+          <div class="spc"></div><div id="feedback"></div>
+        </section>
+        <section class="panel">
+          ${liveDashboardHTML(true)}
+        </section>
+      `;
+      app.appendChild(v);
+      setTimeout(()=> v.querySelector('#answer')?.focus(),0);
+
+      v.querySelector('#hint').onclick = ()=>{
+        v.querySelector('#feedback').innerHTML = `<div class="warning">Hinweis: ${escapeHTML(pz.hint||'Kein Tipp hinterlegt.')}</div>`;
+      };
+
+      v.querySelector('#check').onclick = async ()=>{
+        const val = (v.querySelector('#answer').value||'').trim();
+        const ok = (pz.answers||[]).some(a=> norm(a) === norm(val));
+        const fb = v.querySelector('#feedback');
+        if(ok){
+          fb.innerHTML = '<div class="success">Richtig! Teilcode gesichert.</div>';
+          const upd = Object.assign({}, PROG[TEAM]);
+          upd.solved = upd.solved || team.puzzles.map(()=>false);
+          upd.solved[idx] = true;
+          upd.index = Math.min(idx+1, team.puzzles.length-1);
+          upd.finished = upd.solved.filter(Boolean).length === team.puzzles.length;
+          AFTERTEXT_BUFFER = (pz.afterText||'').trim() || (DATA.interstitialTextDefault||'');
+          await rref(`progress/${TEAM}`).set(upd);
+          await sleep(500);
+          route(upd.finished ? 'waiting' : 'interstitial');
+        }else{
+          fb.innerHTML = '<div class="error">Noch nicht korrekt. Prüft Reihenfolge/Schreibweise.</div>';
+        }
+      };
+    }
+
+    function viewInterstitial(){
+      const v = el('main','view');
+      v.innerHTML = `
+        <section class="panel">
+          <div class="title">Zwischenmeldung</div>
+          <div class="card">${AFTERTEXT_BUFFER || '<i class="muted">— kein Text —</i>'}</div>
+          <div class="spc"></div>
+          <button class="btn" id="next">Weiter</button>
+        </section>
+        <section class="art" aria-hidden="true">${artWave()}</section>`;
+      app.appendChild(v);
+      v.querySelector('#next').onclick = ()=> route('puzzle');
+    }
+
     function bothTeamsDone(){
+      const a = PROG['team-a'], b = PROG['team-b'];
       const ta = DATA?.teams?.find(t=>t.id==='team-a');
       const tb = DATA?.teams?.find(t=>t.id==='team-b');
-      const a = PROG['team-a'], b = PROG['team-b'];
-      const aDone = a && ta && (a.solved||[]).filter(Boolean).length === (ta.puzzles?.length||0) && (ta.puzzles?.length||0) > 0;
-      const bDone = b && tb && (b.solved||[]).filter(Boolean).length === (tb.puzzles?.length||0) && (tb.puzzles?.length||0) > 0;
+      const aDone = a && ta && (a.solved||[]).filter(Boolean).length===ta.puzzles.length && ta.puzzles.length>0;
+      const bDone = b && tb && (b.solved||[]).filter(Boolean).length===tb.puzzles.length && tb.puzzles.length>0;
       return !!(aDone && bDone);
     }
 
-    // ---------- Live-Listener ----------
-    async function attachLiveListeners(){
-      rref('data').on('value', s => { DATA = s.val(); refreshLive(); });
-      rref('progress/team-a').on('value', s => { PROG['team-a'] = s.val(); refreshLive(); });
-      rref('progress/team-b').on('value', s => { PROG['team-b'] = s.val(); refreshLive(); });
+    function viewWaiting(){
+      const v = el('main','view');
+      v.innerHTML = `
+        <section class="panel">
+          <div class="title">Sammelpunkt</div>
+          <p class="muted">Wartet, bis beide Teams fertig sind. Finale wird automatisch freigeschaltet.</p>
+          <div class="spc"></div>
+          ${liveDashboardHTML()}
+          <div class="spc"></div>
+          <button class="btn" id="go-final" ${ (bothTeamsDone() && DATA?.finale?.enabled) ? '' : 'disabled style="opacity:.6;cursor:not-allowed"' }>
+            ${DATA?.finale?.enabled? 'Zum Finalrätsel' : 'Finale (inaktiv)'}
+          </button>
+        </section>`;
+      app.appendChild(v);
+      v.querySelector('#go-final').onclick = ()=>{ if(bothTeamsDone() && DATA?.finale?.enabled) route('final'); };
     }
 
-    function refreshLive(){
-      document.querySelectorAll('[data-live-dash]').forEach(d=>{
-        const compact = d.getAttribute('data-live-dash') === 'compact';
-        d.innerHTML = liveDashboardHTML(compact);
+    function viewFinal(){
+      const v = el('main','view');
+      if(!(bothTeamsDone())){ return route('waiting'); }
+      const fi = DATA?.finale || {title:'Finale', body:'', answers:[]};
+      v.innerHTML = `
+        <section class="panel">
+          <div class="title">${escapeHTML(fi.title||'Finale')}</div>
+          <div class="card">${md(fi.body||'')}</div>
+          <div class="spc"></div>
+          <label>Finalcode</label><input id="final-input" placeholder="Code…"/>
+          <div class="spc"></div><button class="btn" id="final-check">Prüfen</button>
+          <div class="spc"></div><div id="final-fb"></div>
+        </section>`;
+      app.appendChild(v);
+      v.querySelector('#final-check').onclick = ()=>{
+        const vlu = (v.querySelector('#final-input').value||'').trim();
+        const ok = (fi.answers||[]).some(a=> norm(a)===norm(vlu));
+        $('#final-fb').innerHTML = ok ? '<div class="success"><b>Alarm ausgelöst!</b> System reaktiviert.</div>' : '<div class="error">Noch nicht korrekt.</div>';
+      };
+    }
+
+    function viewAdminLogin(){
+      const v = el('main','view');
+      v.innerHTML = `
+        <section class="panel">
+          <div class="title">Adminzugang</div>
+          <p class="muted small">Gilt nur für Raum <span class="kbd">${escapeHTML(ROOM||'—')}</span>.</p>
+          <div class="spc"></div>
+          <label>PIN</label><input id="pin" type="password" placeholder="PIN…"/>
+          <div class="spc"></div>
+          <div class="row"><button class="btn" id="ok">Anmelden</button><button class="btn secondary" id="back">Abbrechen</button></div>
+          <div class="spc"></div><div id="fb"></div>
+        </section>`;
+      app.appendChild(v);
+      v.querySelector('#back').onclick = ()=> route('home');
+      v.querySelector('#ok').onclick = async ()=>{
+        const pin = (v.querySelector('#pin').value||'').trim();
+        const snap = await rref('settings/adminPINHash').get();
+        const hash = snap?.val();
+        if(hash && (await sha256Hex(pin))===hash){ ADMIN=true; route('admin'); }
+        else { $('#fb').innerHTML = '<div class="error">Falsche PIN.</div>'; }
+      };
+    }
+
+    function viewAdmin(){
+      const v = el('main','view');
+      v.innerHTML = `
+        <section class="panel">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div><div class="title">Adminbereich</div><div class="small muted">Live-Daten · Markdown in Einleitung & Aufgaben · Finale per Doppel-Freigabe</div></div>
+            <div class="row" style="flex:0 0 auto"><button class="btn" id="save">Speichern</button><button class="btn ghost" id="logout">Logout</button></div>
+          </div>
+          <div class="spc"></div>
+          <div class="grid cols-2">
+            <div class="panel" style="background:linear-gradient(180deg, rgba(14,26,44,.9), rgba(9,16,28,.85))">
+              <div class="title">Story & Texte</div>
+              <label>Titel</label><input id="adm-title" value="${escapeAttr(DATA?.title||'Rettungsleitstelle // ONLINE')}"/>
+              <div class="spc"></div>
+              <label>Einleitung (Markdown)</label><textarea id="adm-intro">${escapeHTML(DATA?.introText||'')}</textarea>
+              <div class="spc"></div>
+              <label>Standard-Zwischentext (HTML erlaubt)</label><textarea id="adm-inter">${escapeHTML(DATA?.interstitialTextDefault||'')}</textarea>
+              <div class="spc"></div>
+              <div class="note small">Markdown: **fett**, *kursiv*, Leerzeile = Absatz.</div>
+            </div>
+
+            <div class="panel">
+              <div class="title">Finale</div>
+              <label><input type="checkbox" id="fin-enabled" ${(DATA?.finale?.enabled?'checked':'')}/> Finale aktiv</label>
+              <div class="spc"></div>
+              <label>Titel</label><input id="fin-title" value="${escapeAttr(DATA?.finale?.title||'Sammelpunkt – Hauptkonsole')}"/>
+              <div class="spc"></div>
+              <label>Text (Markdown)</label><textarea id="fin-body">${escapeHTML(DATA?.finale?.body||'')}</textarea>
+              <div class="spc"></div>
+              <label>Erlaubte Antworten (eine pro Zeile)</label><textarea id="fin-answers">${escapeHTML((DATA?.finale?.answers||[]).join('\n'))}</textarea>
+            </div>
+          </div>
+
+          <div class="spc"></div>
+          <section class="panel">
+            <div class="title">Rätsel verwalten</div>
+            ${(DATA?.teams||[]).map(t=>`
+              <div class="panel" style="margin-top:12px">
+                <div class="row" style="justify-content:space-between;align-items:center">
+                  <div><div class="kbd">${escapeHTML(t.name)}</div><div class="small muted">${t.puzzles.length} Rätsel</div></div>
+                  <div class="row" style="flex:0 0 auto"><button class="btn secondary" data-act="add" data-team="${escapeAttr(t.id)}">+ Rätsel</button><button class="btn ghost" data-act="reset" data-team="${escapeAttr(t.id)}">Fortschritt zurücksetzen</button></div>
+                </div>
+                ${t.puzzles.map((pz,pi)=>`
+                  <div class="panel" style="margin-top:12px; background:linear-gradient(180deg, rgba(12,20,34,.9), rgba(8,14,24,.85))">
+                    <div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px">
+                      <div style="flex:1 1 auto">
+                        <div style="font-weight:800">${escapeHTML(pz.title)}</div>
+                        <div class="small muted">Antworten: ${(pz.answers||[]).map(a=>`<span class="kbd">${escapeHTML(a)}</span>`).join(' ')}</div>
+                        <div class="small muted">afterText: ${pz.afterText?'<span class="kbd">gesetzt</span>':'<i>leer</i>'}</div>
+                      </div>
+                      <div class="row" style="flex:0 0 auto">
+                        <button class="btn secondary" data-act="edit" data-team="${escapeAttr(t.id)}" data-idx="${pi}">Bearbeiten</button>
+                        <button class="btn secondary" data-act="up" data-team="${escapeAttr(t.id)}" data-idx="${pi}">▲</button>
+                        <button class="btn secondary" data-act="down" data-team="${escapeAttr(t.id)}" data-idx="${pi}">▼</button>
+                        <button class="btn danger" data-act="del" data-team="${escapeAttr(t.id)}" data-idx="${pi}">Löschen</button>
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            `).join('')}
+          </section>
+
+          <div class="spc"></div>
+          <section class="panel">
+            <div class="title">Sicherheit & Raum</div>
+            <div class="grid cols-2">
+              <div class="panel">
+                <div class="kbd">Admin-PIN</div>
+                <div class="spc"></div>
+                <label>Neue PIN</label><input id="pin1" placeholder="PIN…"/>
+                <div class="spc"></div><button class="btn" id="pin-save">PIN setzen</button>
+                <div class="small muted spc">PIN wird als SHA-256 Hash gespeichert.</div>
+              </div>
+              <div class="panel">
+                <div class="kbd">Raum</div>
+                <div class="spc"></div>
+                <div class="row"><button class="btn ghost" id="room-backup">JSON-Backup (Download)</button><button class="btn ghost" id="room-restore">JSON-Restore</button></div>
+                <input type="file" id="file-json" accept="application/json" class="hidden" />
+              </div>
+            </div>
+          </section>
+        </section>`;
+      app.appendChild(v);
+
+      // Bindings
+      v.querySelector('#logout').onclick = ()=>{ ADMIN=false; route('home'); };
+      v.querySelector('#save').onclick = async ()=>{
+        const updated = Object.assign({}, DATA);
+        updated.title = $('#adm-title').value;
+        updated.introText = $('#adm-intro').value;
+        updated.interstitialTextDefault = $('#adm-inter').value;
+        updated.finale = {
+          enabled: $('#fin-enabled').checked,
+          title: $('#fin-title').value,
+          body: $('#fin-body').value,
+          answers: ($('#fin-answers').value||'').split(/\n/).map(s=>s.trim()).filter(Boolean)
+        };
+        await rref('data').set(updated);
+        alert('Gespeichert.');
+      };
+
+      v.addEventListener('click', async (e)=>{
+        const btn = e.target.closest('button'); if(!btn) return;
+        const act = btn.getAttribute('data-act'); const teamId = btn.getAttribute('data-team'); const idx = parseInt(btn.getAttribute('data-idx'));
+        const team = (DATA.teams||[]).find(t=>t.id===teamId);
+        if(!act) return;
+        if(act==='add'){
+          const np = { id: uid(teamId+'-pz'), title:'Neues Rätsel', body:'', answers:[], hint:'', input:'text', afterText:'' };
+          team.puzzles.push(np); await rref('data').set(DATA);
+          await ensureProgressShape(teamId); alert('Rätsel hinzugefügt.');
+        }
+        if(act==='edit'){
+          editPuzzle(team, team.puzzles[idx], idx);
+        }
+        if(act==='del'){
+          if(confirm('Rätsel wirklich löschen?')){ team.puzzles.splice(idx,1); await rref('data').set(DATA); await ensureProgressShape(teamId); }
+        }
+        if(act==='up' && idx>0){ const tmp=team.puzzles[idx-1]; team.puzzles[idx-1]=team.puzzles[idx]; team.puzzles[idx]=tmp; await rref('data').set(DATA); }
+        if(act==='down' && idx<team.puzzles.length-1){ const tmp=team.puzzles[idx+1]; team.puzzles[idx+1]=team.puzzles[idx]; team.puzzles[idx]=tmp; await rref('data').set(DATA); }
+        if(act==='reset'){
+          if(confirm('Fortschritt dieses Teams zurücksetzen?')){
+            await rref(`progress/${teamId}`).set({index:0, solved: team.puzzles.map(()=>false), finished:false});
+          }
+        }
       });
-      const btn = document.querySelector('#go-final');
-      if(btn){
-        const allow = bothTeamsDone() && (DATA?.finale?.enabled);
-        btn.disabled = !allow;
-        btn.style.opacity = allow? '1' : '0.6';
-        btn.style.cursor = allow? 'pointer' : 'not-allowed';
-      }
+
+      v.querySelector('#pin-save').onclick = async ()=>{
+        const p = ($('#pin1').value||'').trim(); if(!p) return alert('PIN darf nicht leer sein.');
+        const h = await sha256Hex(p); await rref('settings/adminPINHash').set(h); alert('PIN aktualisiert.');
+      };
+
+      // Backup/Restore
+      v.querySelector('#room-backup').onclick = async ()=>{
+        const snap = await rref('').get(); const obj = snap.val() || {};
+        const blob = new Blob([JSON.stringify(obj, null, 2)], {type:'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `leitstelle-room-${ROOM}-${nowISO()}.json`; a.click();
+        setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+      };
+      v.querySelector('#room-restore').onclick = ()=> $('#file-json').click();
+      v.querySelector('#file-json').addEventListener('change', async (ev)=>{
+        const file = ev.target.files[0]; if(!file) return; const txt = await file.text();
+        try{ const json = JSON.parse(txt); await rref('').set(json); alert('Raum wiederhergestellt.'); }
+        catch(e){ alert('Fehler beim Import: '+e.message); }
+      });
     }
 
+    // ---------- Live Dashboard ----------
+    function pct(solved,total){ return total? Math.round((solved/total)*100) : 0; }
     function liveDashboardHTML(compact=false){
-      const ta = DATA?.teams?.find(t=>t.id==='team-a'); 
-      const tb = DATA?.teams?.find(t=>t.id==='team-b');
+      const ta = DATA?.teams?.find(t=>t.id==='team-a'); const tb = DATA?.teams?.find(t=>t.id==='team-b');
       const pa = PROG['team-a'] || {solved:[], index:0, finished:false};
       const pb = PROG['team-b'] || {solved:[], index:0, finished:false};
       const as = (pa.solved||[]).filter(Boolean).length, at = ta? ta.puzzles.length:0;
       const bs = (pb.solved||[]).filter(Boolean).length, bt = tb? tb.puzzles.length:0;
-      const pct = (s,t)=> t? Math.round(s/t*100):0;
       return `
         <div class="grid ${compact?'':'cols-2'}">
           <div class="panel" style="background:linear-gradient(180deg, rgba(12,20,34,.9), rgba(8,14,24,.85))">
             <div class="row" style="justify-content:space-between;align-items:center">
-              <div><div class="kbd">${(ta?.name)||'Team Alpha'}</div><div class="small muted">${as}/${at} Rätsel</div></div>
+              <div><div class="kbd">${escapeHTML(ta?.name||'Team Alpha')}</div><div class="small muted">${as}/${at} Rätsel</div></div>
               <div class="pill ${pa.finished?'':'muted'}">${pa.finished?'bereit fürs Finale':'arbeitet…'}</div>
             </div>
             <div class="spc"></div>
@@ -209,7 +660,7 @@
           </div>
           <div class="panel" style="background:linear-gradient(180deg, rgba(12,20,34,.9), rgba(8,14,24,.85))">
             <div class="row" style="justify-content:space-between;align-items:center">
-              <div><div class="kbd">${(tb?.name)||'Team Bravo'}</div><div class="small muted">${bs}/${bt} Rätsel</div></div>
+              <div><div class="kbd">${escapeHTML(tb?.name||'Team Bravo')}</div><div class="small muted">${bs}/${bt} Rätsel</div></div>
               <div class="pill ${pb.finished?'':'muted'}">${pb.finished?'bereit fürs Finale':'arbeitet…'}</div>
             </div>
             <div class="spc"></div>
@@ -221,344 +672,70 @@
       `;
     }
 
-    // ---------- Seed-Daten ----------
-    function seedData(){
-      return {
-        title: 'Rettungsleitstelle – HACKED',
-        introText: '**Achtung Einsatzleitung!**\\nEin Angreifer versucht, die Leitstelle zu übernehmen. Zwei Teams sichern parallel die Systeme.',
-        teams: [
-          { id: 'team-a', name: 'Team Alpha', puzzles: [
-            { id: uid('a'), title:'Erstaufnahme', body:'**Patientendaten** korrekt prüfen.', answers:['alpha'], hint:'Stichwort Einsatzprotokoll', input:'text', afterText:'<b>Gute Arbeit.</b> Meldet euch beim Dispatcher.' }
-          ]},
-          { id: 'team-b', name: 'Team Bravo', puzzles: [
-            { id: uid('b'), title:'Routenkontrolle', body:'*Navigation* der RTWs prüfen.', answers:['bravo'], hint:'Rettungswege!', input:'text', afterText:'Route stabil.' }
-          ]}
-        ],
-        finale: { enabled:true, title:'Sperrcode der Zentrale', body:'Beide Teams geben die finalen Codes zusammen ein.' }
-      };
+    // ---------- Live listeners ----------
+    async function attachLiveListeners(){
+      // room data
+      rref('data').on('value', snap => { DATA = snap.val(); refreshLive(); });
+      rref('progress/team-a').on('value', snap => { PROG['team-a'] = snap.val(); refreshLive(); });
+      rref('progress/team-b').on('value', snap => { PROG['team-b'] = snap.val(); refreshLive(); });
     }
-
-    async function ensureProgressShape(teamId){
-      const t = (DATA?.teams||[]).find(t=>t.id===teamId);
-      if(!t) return;
-      const solved = Array.from({length: t.puzzles.length}, ()=>false);
-      const ref = rref(`progress/${teamId}`);
-      const snap = await ref.get();
-      if(!snap.exists()){
-        await ref.set({ index:0, solved, finished:false });
-      }else{
-        const val = snap.val()||{};
-        const need = t.puzzles.length;
-        const cur = Array.isArray(val.solved)? val.solved : [];
-        if(cur.length !== need){
-          const next = Array.from({length: need}, (_,i)=> !!cur[i]);
-          await ref.update({ solved: next });
-        }
-      }
-    }
-
-    // ---------- Views ----------
-    function viewRoom(){
-      const app = $('#app'); app.innerHTML='';
-      const v = el('main','view'); v.innerHTML = `
-        <header>
-          <div class="brand">
-            <div class="logo">🚑</div>
-            <div>
-              <div class="sig">Leitstelle</div>
-              <div class="small muted">Rettungsdienst – Online Escape</div>
-            </div>
-          </div>
-          <div class="pill" id="hdr-room">–</div>
-        </header>
-
-        <section class="panel hero">
-          <div class="title">Raum wählen</div>
-          <p class="subtitle">Erstelle einen Raum oder tritt einem bestehenden bei.</p>
-          <div class="spc"></div>
-          <div class="row">
-            <input id="room-id" placeholder="Raumcode (z. B. RL2025)" />
-            <button class="btn" id="create">Neuen Raum erstellen</button>
-            <button class="btn secondary" id="join">Raum beitreten</button>
-            <button class="btn ghost" id="admin">Admin</button>
-          </div>
-        </section>
-      `;
-      app.appendChild(v);
-
-      v.querySelector('#create').onclick = async ()=>{
-        try{
-          const raw = (v.querySelector('#room-id').value||'').trim(); if(!raw) return alert('Bitte Raumcode eingeben.');
-          ROOM = norm(raw); $('#hdr-room').textContent = ROOM;
-          const d = await rref('data').get();
-          if(!d.exists()){
-            const seed = seedData();
-            await rref('data').set(seed);
-            for(const t of seed.teams){
-              const solved = Array.from({length:t.puzzles.length},()=>false);
-              await rref(`progress/${t.id}`).set({ index:0, solved, finished:false });
-            }
-            await rref('settings/adminPINHash').set(await sha256Hex('9110'));
-          }
-          await attachLiveListeners();
-          route('home');
-        }catch(e){
-          console.error(e); showErrorBox('Erstellen: '+(e?.message||e));
-        }
-      };
-
-      v.querySelector('#join').onclick = async ()=>{
-        try{
-          const raw = (v.querySelector('#room-id').value||'').trim(); if(!raw) return alert('Bitte Raumcode eingeben.');
-          ROOM = norm(raw); $('#hdr-room').textContent = ROOM;
-          const snap = await rref('data').get();
-          if(!snap.exists()){
-            alert('Raum existiert noch nicht oder hat keine Daten – bitte zuerst "Neuen Raum erstellen" (Admin).');
-            return;
-          }
-          DATA = snap.val();
-          await attachLiveListeners();
-          route('home');
-        }catch(e){
-          console.error(e); showErrorBox('Beitreten: '+(e?.message||e));
-        }
-      };
-
-      v.querySelector('#admin').onclick = ()=> route('admin-login');
-    }
-
-    function viewHome(){
-      const app = $('#app'); app.innerHTML='';
-      const v = el('main','view'); v.innerHTML = `
-        <section class="panel">
-          <div class="title">${escapeHTML(DATA?.title || 'Leitstelle')}</div>
-          <div class="card">${renderMarkdown(DATA?.introText || '')}</div>
-        </section>
-      `;
-      const dash = el('section','panel'); dash.setAttribute('data-live-dash','full'); dash.innerHTML = liveDashboardHTML(false);
-      v.appendChild(dash);
-
-      const teams = (DATA?.teams)||[];
-      const grid = el('section','panel'); grid.innerHTML = `
-        <div class="title">Teamauswahl</div>
-        <div class="grid cols-2">
-          ${teams.map(t=>`
-            <button class="panel" data-team="${escapeAttr(t.id)}" style="text-align:left">
-              <div class="row" style="justify-content:space-between;align-items:center">
-                <div>
-                  <div class="kbd" style="font-size:1.1rem">${escapeHTML(t.name)}</div>
-                  <div class="small muted">${t.puzzles.length} Rätsel</div>
-                </div>
-                <div class="pill">${t.id==='team-a'?'ALPHA':'BRAVO'}</div>
-              </div>
-            </button>
-          `).join('')}
-        </div>
-      `;
-      v.appendChild(grid);
-      app.appendChild(v);
-
-      v.querySelectorAll('[data-team]').forEach(b=> b.onclick = async ()=>{
-        TEAM = b.getAttribute('data-team');
-        await ensureProgressShape(TEAM);
-        route('intro');
+    function refreshLive(){
+      // Update any live dashboard instances
+      app.querySelectorAll('.panel').forEach(p=>{
+        // no-op; views re-render on navigation; dashboards are simple
       });
     }
 
-    function viewIntro(){
-      const app = $('#app'); app.innerHTML='';
-      const v = el('main','view'); v.innerHTML = `
-        <section class="panel">
-          <div class="title">${escapeHTML((DATA?.teams||[]).find(t=>t.id===TEAM)?.name || 'Team')}</div>
-          <div class="card">${renderMarkdown(DATA?.introText || '')}</div>
-          <div class="spc"></div>
-          <button class="btn" id="start">Start</button>
-        </section>
-      `;
-      app.appendChild(v);
-      v.querySelector('#start').onclick = ()=> route('puzzle');
+    async function ensureProgressShape(teamId){
+      const team = DATA?.teams?.find(t=>t.id===teamId); if(!team) return;
+      const ref = rref(`progress/${teamId}`);
+      const snap = await ref.get(); let p = snap.val();
+      const need = team.puzzles.length;
+      if(!p || !Array.isArray(p.solved) || p.solved.length!==need){
+        const base = (p && Array.isArray(p.solved)) ? p.solved : [];
+        const solved = Array.from({length:need}, (_,i)=> base[i] || false);
+        await ref.set({ index: Math.min(p?.index||0, need-1), solved, finished: solved.filter(Boolean).length===need && need>0 });
+      }
     }
 
-    function viewPuzzle(){
-      const app = $('#app'); app.innerHTML='';
-      const team = (DATA?.teams||[]).find(t=>t.id===TEAM); if(!team) return route('home');
-      const prog = PROG[TEAM] || { index:0, solved:Array.from({length:team.puzzles.length},()=>false), finished:false };
-      const idx = Math.min(prog.index, team.puzzles.length-1);
-      const pz = team.puzzles[idx];
+    function getTeam(){ return (DATA?.teams||[]).find(t=>t.id===TEAM); }
+    function uid(prefix){ return prefix + '-' + Math.random().toString(36).slice(2,8); }
 
-      const v = el('main','view'); v.innerHTML = `
-        <section class="panel">
-          <div class="title">${escapeHTML(pz.title)}</div>
-          <div class="card">${renderMarkdown(pz.body || '')}</div>
-          <div class="spc"></div>
-          <form id="f">
-            ${pz.input==='number'
-              ? '<input id="ans" inputmode="numeric" pattern="[0-9]*" placeholder="Antwort" />'
-              : '<input id="ans" placeholder="Antwort" />'}
-            <div class="spc"></div>
-            <div class="row">
-              <button class="btn" type="submit">Prüfen</button>
-              ${pz.hint? '<button class="btn ghost" id="hint" type="button">Tipp</button>':''}
-            </div>
-          </form>
-          <div class="spc"></div>
-          <div id="msg"></div>
-        </section>
-      `;
-      app.appendChild(v);
-
-      const dash = el('section','panel'); dash.setAttribute('data-live-dash','compact'); dash.innerHTML = liveDashboardHTML(true);
-      app.appendChild(dash);
-
-      if(pz.hint){ v.querySelector('#hint').onclick = ()=> { alert(pz.hint); }; }
-
-      v.querySelector('#f').onsubmit = async (e)=>{
-        e.preventDefault();
-        try{
-          const val = (v.querySelector('#ans').value||'').trim();
-          const ok = (pz.answers||[]).some(a=> String(a).trim().toLowerCase() === val.toLowerCase());
-          const m = $('#msg');
-          if(!ok){ m.innerHTML = '<div class="error">Leider falsch.</div>'; return; }
-          m.innerHTML = pz.afterText || '<div class="note">Korrekt!</div>';
-
-          const ref = rref(`progress/${TEAM}`);
-          const snap = await ref.get();
-          let state = snap.val() || { index:0, solved:Array.from({length:team.puzzles.length},()=>false), finished:false };
-          state.solved[idx] = true;
-          if(idx < team.puzzles.length-1){
-            state.index = idx + 1;
-          }else{
-            state.finished = true;
-          }
-          await ref.set(state);
-        }catch(err){
-          console.error(err); showErrorBox('Antwort speichern: '+(err?.message||err));
-        }
-      };
-    }
-
-    function viewWaiting(){
-      const app = $('#app'); app.innerHTML='';
-      const v = el('main','view'); v.innerHTML = `
-        <section class="panel">
-          <div class="title">Sammelpunkt</div>
-          <p class="muted">Finale wird aktiviert, sobald beide Teams fertig sind.</p>
-          <div class="spc"></div>
-          <section class="panel" data-live-dash="full">${liveDashboardHTML(false)}</section>
-          <div class="spc"></div>
-          <button class="btn" id="go-final" ${(bothTeamsDone() && (DATA?.finale?.enabled)) ? '' : 'disabled style="opacity:.6;cursor:not-allowed"'}>Zum Finalrätsel</button>
-        </section>
-      `;
-      app.appendChild(v);
-      v.querySelector('#go-final').onclick = ()=>{ if(bothTeamsDone() && (DATA?.finale?.enabled)){ route('final'); } };
-    }
-
-    function viewFinal(){
-      const app = $('#app'); app.innerHTML='';
-      const v = el('main','view'); v.innerHTML = `
-        <section class="panel">
-          <div class="title">${escapeHTML(DATA?.finale?.title || 'Finale')}</div>
-          <div class="card">${renderMarkdown(DATA?.finale?.body || '')}</div>
-          <div class="spc"></div>
-          <div class="note">Mission abgeschlossen. Zentrale gesichert.</div>
-        </section>
-      `;
-      app.appendChild(v);
-    }
-
-    // ---------- Admin ----------
-    function viewAdminLogin(){
-      const app = $('#app'); app.innerHTML='';
-      const v = el('main','view'); v.innerHTML = `
-        <section class="panel">
-          <div class="title">Adminzugang</div>
-          <div class="row">
-            <input id="pin" placeholder="PIN" />
-            <button class="btn" id="go">Login</button>
-          </div>
-        </section>
-      `;
-      app.appendChild(v);
-      v.querySelector('#go').onclick = async ()=>{
-        try{
-          const pin = (v.querySelector('#pin').value||'').trim();
-          if(!pin) return alert('Bitte PIN eingeben.');
-          const hashSnap = await rref('settings/adminPINHash').get();
-          const hash = hashSnap.val();
-          if(hash && hash === await sha256Hex(pin)){
-            ADMIN = true; route('admin');
-          }else{
-            alert('PIN falsch.');
-          }
-        }catch(e){
-          console.error(e); showErrorBox('Admin-Login: '+(e?.message||e));
-        }
-      };
-    }
-
-    // *** HIER NUR MODAL FIX – Rest unverändert ***
+    // ---------- Puzzle Editor Modal ----------
     function editPuzzle(team, puzzle, index){
       const isNew = !puzzle;
       puzzle = puzzle || { id: uid(team.id+'-pz'), title:'Neues Rätsel', body:'', answers:[], hint:'', input:'text', afterText:'' };
-
-      // Overlay
-      const m = el('div');
-      m.style.position = 'fixed';
-      m.style.inset = '0';
-      m.style.zIndex = 50;
-      m.style.background = 'rgba(0,0,0,.6)';
-      // >>> Fix: sichtbar & scrollbar
-      m.style.display='flex';
-      m.style.alignItems='flex-start';
-      m.style.justifyContent='center';
-      m.style.padding='24px';
-      m.style.overflow='auto';
-
-      // Modal panel
-      const panelHTML = `
-        <div class="panel" style="width:min(960px, calc(100vw - 32px)); max-height:90vh; overflow:auto;">
-          <div class="row" style="justify-content:space-between;align-items:center;margin:-8px 0 12px 0">
-            <div class="title" style="margin:0">${isNew?'Rätsel hinzufügen':'Rätsel bearbeiten'}</div>
-            <div class="row" style="flex:0 0 auto;gap:8px">
-              <button class="btn" id="save">Speichern</button>
-              <button class="btn secondary" id="x">Schließen</button>
-            </div>
+      const m = el('div'); m.style.position='fixed'; m.style.inset='0'; m.style.zIndex=50; m.style.background='rgba(0,0,0,.6)';
+      m.innerHTML = `
+        <div class="panel" style="max-width:960px;margin:6vh auto">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div class="title">${isNew?'Rätsel hinzufügen':'Rätsel bearbeiten'}</div>
+            <button class="btn secondary" id="x">Schließen</button>
           </div>
-
           <div class="spc"></div>
           <label>Titel</label><input id="t" value="${escapeAttr(puzzle.title)}"/>
           <div class="spc"></div>
-
           <label>Text (Markdown)</label><textarea id="b">${escapeHTML(puzzle.body||'')}</textarea>
           <div class="spc"></div>
-
           <div class="row">
-            <div>
-              <label>Lösung(en) (eine pro Zeile)</label>
-              <textarea id="a">${escapeHTML((puzzle.answers||[]).join('\n'))}</textarea>
-            </div>
-            <div>
-              <label>Eingabefeld</label>
+            <div><label>Lösung(en) (eine pro Zeile)</label><textarea id="a">${escapeHTML((puzzle.answers||[]).join('\n'))}</textarea></div>
+            <div><label>Eingabefeld</label>
               <select id="in">
                 <option value="text" ${puzzle.input==='text'?'selected':''}>Text/Code</option>
                 <option value="number" ${puzzle.input==='number'?'selected':''}>Nur Zahlen</option>
               </select>
             </div>
           </div>
-
           <div class="spc"></div>
           <label>Tipp (optional)</label><input id="h" value="${escapeAttr(puzzle.hint||'')}"/>
           <div class="spc"></div>
-
-          <label>Zwischentext nach Lösung (HTML erlaubt)</label>
-          <textarea id="aft">${escapeHTML(puzzle.afterText||'')}</textarea>
+          <label>Zwischentext nach Lösung (HTML erlaubt)</label><textarea id="aft">${escapeHTML(puzzle.afterText||'')}</textarea>
           <div class="spc"></div>
-        </div>
-      `;
-
-      m.innerHTML = panelHTML;
-      document.body.appendChild(m);
-
+          <div class="row">
+            <button class="btn" id="save">Speichern</button>
+            ${isNew?'':'<button class="btn ghost" id="test">Vorschau</button>'}
+          </div>
+        </div>`;
       m.querySelector('#x').onclick = ()=> m.remove();
       m.querySelector('#save').onclick = async ()=>{
         const P = {
@@ -571,149 +748,81 @@
           afterText: m.querySelector('#aft').value
         };
         if(isNew){ team.puzzles.push(P); } else { team.puzzles[index]=P; }
-        await rref('data').set(DATA);
-        await ensureProgressShape(team.id);
+        await rref('data').set(DATA); await ensureProgressShape(team.id);
         m.remove();
       };
+      const test = m.querySelector('#test'); if(test) test.onclick = ()=> alert('Akzeptierte Antworten: '+(puzzle.answers||[]).join(', ')+'\n\nAfterText (gekürzt):\n'+(puzzle.afterText||'—'));
+      document.body.appendChild(m);
     }
 
-    function viewAdmin(){
-      if(!ADMIN) return route('admin-login');
-      const app = $('#app'); app.innerHTML='';
-      const v = el('main','view'); v.innerHTML = `
-        <section class="panel">
-          <div class="title">Admin – Raum ${escapeHTML(ROOM)}</div>
-          <div class="row">
-            <button class="btn" id="back">Zurück</button>
-            <div></div>
-            <input id="newpin" placeholder="Neue PIN (optional)"/>
-            <button class="btn secondary" id="savepin">PIN speichern</button>
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="title">Einleitung</div>
-          <textarea id="intro">${escapeHTML(DATA?.introText||'')}</textarea>
-          <div class="spc"></div>
-          <button class="btn" id="saveIntro">Einleitung speichern</button>
-        </section>
-
-        <section class="panel">
-          <div class="title">Teams & Rätsel</div>
-          <div class="grid cols-2" id="teams"></div>
-        </section>
-
-        <section class="panel">
-          <div class="title">Finale</div>
-          <label><input type="checkbox" id="finOn" ${DATA?.finale?.enabled?'checked':''}/> Finale aktiviert</label>
-          <div class="spc"></div>
-          <label>Titel</label><input id="finTitle" value="${escapeAttr(DATA?.finale?.title||'')}"/>
-          <div class="spc"></div>
-          <label>Text (Markdown)</label><textarea id="finBody">${escapeHTML(DATA?.finale?.body||'')}</textarea>
-          <div class="spc"></div>
-          <button class="btn" id="saveFinal">Finale speichern</button>
-        </section>
-      `;
-      app.appendChild(v);
-
-      v.querySelector('#back').onclick = ()=> route('home');
-      v.querySelector('#saveIntro').onclick = async ()=>{
-        try{
-          DATA.introText = v.querySelector('#intro').value;
-          await rref('data').set(DATA);
-          alert('Einleitung gespeichert.');
-        }catch(e){ showErrorBox('Speichern: '+(e?.message||e)); }
-      };
-      v.querySelector('#savepin').onclick = async ()=>{
-        try{
-          const pin = (v.querySelector('#newpin').value||'').trim();
-          if(!pin) return alert('Bitte neue PIN eingeben.');
-          await rref('settings/adminPINHash').set(await sha256Hex(pin));
-          alert('PIN gespeichert.');
-        }catch(e){ showErrorBox('PIN speichern: '+(e?.message||e)); }
-      };
-      v.querySelector('#saveFinal').onclick = async ()=>{
-        try{
-          DATA.finale = DATA.finale || {};
-          DATA.finale.enabled = v.querySelector('#finOn').checked;
-          DATA.finale.title   = v.querySelector('#finTitle').value;
-          DATA.finale.body    = v.querySelector('#finBody').value;
-          await rref('data').set(DATA);
-          alert('Finale gespeichert.');
-        }catch(e){ showErrorBox('Finale speichern: '+(e?.message||e)); }
-      };
-
-      const box = v.querySelector('#teams');
-      (DATA?.teams||[]).forEach((t,ti)=>{
-        const card = el('div','panel');
-        card.innerHTML = `
-          <div class="row" style="justify-content:space-between;align-items:center">
-            <div><div class="kbd">${escapeHTML(t.name)}</div><div class="small muted">${t.puzzles.length} Rätsel</div></div>
-            <div class="row" style="flex:0 0 auto; gap:8px">
-              <button class="btn" data-add="${escapeAttr(t.id)}">Rätsel hinzufügen</button>
-            </div>
-          </div>
-          <div class="spc"></div>
-          <div class="grid">
-            ${t.puzzles.map((p,pi)=>`
-              <div class="panel" style="background:linear-gradient(180deg, rgba(10,18,30,.7), rgba(10,18,30,.5))">
-                <div class="row" style="justify-content:space-between;align-items:center">
-                  <div><b>${escapeHTML(p.title)}</b><div class="small muted">${p.input==='number'?'Zahl':'Text'}</div></div>
-                  <div class="row" style="flex:0 0 auto; gap:8px">
-                    <button class="btn secondary" data-edit="${escapeAttr(t.id)}:${pi}">Bearbeiten</button>
-                    <button class="btn ghost" data-del="${escapeAttr(t.id)}:${pi}">Löschen</button>
-                  </div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        `;
-        box.appendChild(card);
-      });
-
-      box.querySelectorAll('[data-add]').forEach(btn=>{
-        btn.onclick = ()=>{
-          const id = btn.getAttribute('data-add');
-          const team = (DATA?.teams||[]).find(x=>x.id===id);
-          editPuzzle(team, null, team.puzzles.length);
-        };
-      });
-      box.querySelectorAll('[data-edit]').forEach(btn=>{
-        btn.onclick = ()=>{
-          const [id,pi] = btn.getAttribute('data-edit').split(':');
-          const team = (DATA?.teams||[]).find(x=>x.id===id);
-          editPuzzle(team, team.puzzles[+pi], +pi);
-        };
-      });
-      box.querySelectorAll('[data-del]').forEach(btn=>{
-        btn.onclick = async ()=>{
-          if(!confirm('Dieses Rätsel wirklich löschen?')) return;
-          const [id,pi] = btn.getAttribute('data-del').split(':');
-          const team = (DATA?.teams||[]).find(x=>x.id===id);
-          team.puzzles.splice(+pi,1);
-          await rref('data').set(DATA);
-          await ensureProgressShape(id);
-          viewAdmin();
-        };
-      });
+    // ---------- SVG / Illustrations ----------
+    function icon(name,size=24){
+      if(name==='siren') return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="10" y="24" width="44" height="26" rx="8" fill="#0b1523" stroke="rgba(255,255,255,.2)"/>
+        <rect x="14" y="18" width="36" height="16" rx="8" fill="#18263b" stroke="rgba(0,255,198,.35)"/>
+        <path d="M32 4v10M6 32h10M58 32H48M11 11l7 7M53 11l-7 7" stroke="#00ffc6" stroke-width="2" stroke-linecap="round"/>
+        <path d="M20 24h24v10H20z" fill="#ff3b81" opacity=".45"/>
+        <circle cx="44" cy="37" r="3" fill="#7a5cff"/>
+      </svg>`;
+      return '';
+    }
+    function artAmbulance(){
+      return `<svg viewBox="0 0 640 240" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#00ffc6" stop-opacity=".25"/><stop offset="1" stop-color="#ff3b81" stop-opacity=".25"/></linearGradient>
+          <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <rect x="0" y="0" width="640" height="240" fill="url(#g1)"/>
+        <g filter="url(#glow)">
+          <rect x="90" y="90" width="270" height="80" rx="12" fill="#0e1a2c" stroke="#00ffc6"/>
+          <rect x="360" y="110" width="150" height="60" rx="10" fill="#0e1a2c" stroke="#7a5cff"/>
+          <circle cx="150" cy="180" r="20" fill="#121a2b" stroke="#00ffc6"/>
+          <circle cx="360" cy="180" r="20" fill="#121a2b" stroke="#7a5cff"/>
+          <path d="M130 120h70M165 100v40" stroke="#ff3b81" stroke-width="6" stroke-linecap="round"/>
+          <rect x="120" y="70" width="25" height="20" rx="4" fill="#ff3b81"/>
+        </g>
+      </svg>`;
+    }
+    function artConsole(){
+      return `<svg viewBox="0 0 640 240" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <rect width="640" height="240" fill="#0b1523"/>
+        <polyline points="0,180 80,150 140,170 200,120 260,160 320,110 380,140 440,100 500,130 560,90 640,120"
+         fill="none" stroke="#00ffc6" stroke-width="3"/>
+        <g opacity=".6">
+          <polyline points="0,160 80,130 140,150 200,100 260,140 320,90 380,120 440,80 500,110 560,70 640,100"
+            fill="none" stroke="#7a5cff" stroke-width="2"/>
+        </g>
+      </svg>`;
+    }
+    function artWave(){
+      return `<svg viewBox="0 0 640 160" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="g2" x1="0" x2="1"><stop offset="0" stop-color="#00ffc6"/><stop offset="1" stop-color="#ff3b81"/></linearGradient>
+        </defs>
+        <rect width="640" height="160" fill="#0b1523"/>
+        <path d="M0 80 C60 60, 120 100, 180 80 S300 60, 360 80 480 100, 540 80 600 60, 640 80" stroke="url(#g2)" stroke-width="4" fill="none"/>
+      </svg>`;
     }
 
-    // ---------- Router ----------
-    function route(screen){
-      switch(screen){
-        case 'home':    return viewHome();
-        case 'intro':   return viewIntro();
-        case 'puzzle':  return viewPuzzle();
-        case 'waiting': return viewWaiting();
-        case 'final':   return viewFinal();
-        case 'admin-login': return viewAdminLogin();
-        case 'admin':   return viewAdmin();
-        default:        return viewRoom();
-      }
+    // ---------- Seed data for new rooms ----------
+    function seedData(){
+      return {
+        title: "Rettungsleitstelle // ONLINE",
+        introText: "[Leitstelle, ruhig]\n\n**Guten Morgen, Team.**\nEuer Einsatz ist jetzt live vernetzt.\n\nIhr arbeitet in zwei Trupps. Fortschritt ist für beide sichtbar.",
+        interstitialTextDefault: "Verbindungsversuch zur Backup-Leitstelle fehlgeschlagen. Weiter zur nächsten Routine.",
+        finale: {enabled:false, title:"Sammelpunkt – Hauptkonsole", body:"Beide Teams **fertig**? Dann kann der Hauptalarm ausgelöst werden.", answers:["0000"]},
+        teams: [
+          {id:"team-a", name:"Team Alpha", puzzles:[
+            {id:"a1", title:"EKG – Elektroden", body:"Ordnet die **Extremitäten-Farben** Rot→Gelb→Grün→Schwarz und lest die Ziffern.", answers:["7249"], hint:"Extremitäten, nicht Brustwand.", afterText:"Sicherung <b>E-01</b> gesetzt.", input:"text"},
+            {id:"a2", title:"Umkleide – Spinde", body:"Zahlen pro Spind lesen, Reihenfolge Rot→Gelb→Grün→Schwarz.", answers:["1538"], hint:"Farbcodierung wie EKG.", afterText:"Sicherung <b>M-07</b> gesetzt.", input:"text"}
+          ]},
+          {id:"team-b", name:"Team Bravo", puzzles:[
+            {id:"b1", title:"Sauerstoff-Depot", body:"Sortiert Flussraten **0,5 / 2 / 6 / 15 l/min** und bildet den Code.", answers:["28615","0.5-2-6-15"], hint:"Nasensonde klein, Maske groß.", afterText:"Sicherung <b>O2-12</b> gesetzt.", input:"text"},
+            {id:"b2", title:"Glukose-Setup", body:"Reihenfolge: *„eine Broteinheit“* → **Spritze** → *NaCl*.", answers:["4317"], hint:"„Broteinheit“ = i.v. Glukose.", afterText:"Sicherung <b>G-04</b> gesetzt.", input:"text"}
+          ]}
+        ]
+      };
     }
-
-    // ---------- Boot ----------
-    route('room'); // Start: Raumcode wählen
 
   })();
   </script>
