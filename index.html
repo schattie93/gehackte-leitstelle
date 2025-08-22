@@ -129,7 +129,53 @@ button.panel[data-team="team-b"] .pill{
   border-color: rgba(122,92,255,.35);
   color: #e6e0ff;
 }
+button.panel[data-team] .kbd,
+button.panel[data-team] .pill{
+  display: none !important;
+}
 
+/* Falls die innere .row irgendeinen Hintergrund/Schatten hat: neutralisieren */
+button.panel[data-team] .row{
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Pseudo-Titel einblenden, damit nur 1 Label sichtbar ist */
+button.panel[data-team]{
+  position: relative;
+  text-align: left;
+  padding-top: 18px;      /* etwas Platz für den Titel */
+}
+
+/* Inhalt des Titels je Team */
+button.panel[data-team="team-a"]::before{
+  content: 'TEAM ALPHA';
+  display: block;
+  font-weight: 900;
+  letter-spacing: .08em;
+  font-size: 1.15rem;
+  margin: 2px 0 6px;
+  color: #bfffea;         /* Alpha-Farbe, passt zu deinem grünen Card-Glow */
+  opacity: .95;
+}
+
+button.panel[data-team="team-b"]::before{
+  content: 'TEAM BRAVO';
+  display: block;
+  font-weight: 900;
+  letter-spacing: .08em;
+  font-size: 1.15rem;
+  margin: 2px 0 6px;
+  color: #e6e0ff;         /* Bravo-Farbe, passt zu deinem lila Card-Glow */
+  opacity: .95;
+}
+
+/* Der Rätsel-Zähler darunter darf bleiben (steht ja im vorhandenen Markup).
+   Falls er zu nah dran ist: */
+button.panel[data-team] .small.muted{ margin-top: -2px; display: inline-block; }
   </style>
 
   <!-- Firebase SDKs (compat for simplicity) -->
