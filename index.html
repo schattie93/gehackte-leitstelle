@@ -901,6 +901,8 @@ button.panel[data-team] .small.muted{ margin-top: -2px; display: inline-block; }
       return '';
     }
     // RTW-Illustration: ohne rechten Kasten, symmetrische Räder, Blaulicht (doppelter Puls)
+// RTW-Illustration: ohne rechten Kasten, symmetrische Räder, Blaulicht-Puls,
+// und: Johanniter-Wappen statt einfachem Kreuz
 function artAmbulance(){
   return `<svg viewBox="0 0 640 240" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-label="RTW">
     <defs>
@@ -923,38 +925,35 @@ function artAmbulance(){
             fill="#0e1a2c" stroke="#00ffc6" />
 
       <!-- Räder: links & rechts symmetrisch im Body -->
-      <!-- links: 90 + 60 = 150 -->
-      <circle id="wheel-left" cx="150" cy="180" r="20"
-              fill="#121a2b" stroke="#00ffc6"/>
-      <!-- rechts: Body-Rechts 360 - 60 = 300 -->
-      <circle id="wheel-right" cx="300" cy="180" r="20"
-              fill="#121a2b" stroke="#7a5cff"/>
+      <circle id="wheel-left"  cx="150" cy="180" r="20" fill="#121a2b" stroke="#00ffc6"/>
+      <circle id="wheel-right" cx="300" cy="180" r="20" fill="#121a2b" stroke="#7a5cff"/>
 
       <!-- Blaulicht: Doppel-Puls -->
-      <!-- statischer Lampenkörper -->
       <rect id="beacon" x="120" y="70" width="25" height="20" rx="4"
             fill="#5ac8ff" stroke="#bfe6ff" stroke-width="2"/>
-      <!-- pulsierende Aura (doppelter Blitz) -->
       <circle cx="132.5" cy="80" r="12" fill="#5ac8ff" opacity="0">
-        <!-- Radius pulst: klein -> groß -> klein -> groß -> klein -->
-        <animate attributeName="r"
-                 values="12;32;12;32;12"
-                 keyTimes="0;0.18;0.36;0.54;1"
-                 dur="1.4s"
-                 repeatCount="indefinite"/>
-        <!-- Sichtbarkeit passend zum Doppelblitz -->
-        <animate attributeName="opacity"
-                 values="0;.9;0;.9;0"
-                 keyTimes="0;0.18;0.36;0.54;1"
-                 dur="1.4s"
-                 repeatCount="indefinite"/>
+        <animate attributeName="r" values="12;32;12;32;12" keyTimes="0;0.18;0.36;0.54;1" dur="1.4s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0;.9;0;.9;0" keyTimes="0;0.18;0.36;0.54;1" dur="1.4s" repeatCount="indefinite"/>
       </circle>
 
-      <!-- Sanitätskreuz -->
-      <path d="M130 120h70 M165 100v40" stroke="#ff3b81" stroke-width="6" stroke-linecap="round"/>
+      <!-- Johanniter-Wappen: roter Rundschild mit weißem achtspitzigen Kreuz -->
+      <!-- Position mittig im Kasten -->
+      <g id="johanniter" transform="translate(225,130)">
+        <!-- roter Kreis mit dünner weißer Kontur -->
+        <circle r="26" fill="#e6002e" stroke="#ffffff" stroke-width="2"/>
+        <!-- weiße, stilisierte achtspitzige Johanniter-/Malteser-Kreuzform -->
+        <!-- aufgebaut aus vier identischen "Armen", im 90°-Raster rotiert -->
+        <g fill="#ffffff">
+          <path d="M0,-3 L7,-14 L0,-22 L-7,-14 Z"/>
+          <g transform="rotate(90)"><path d="M0,-3 L7,-14 L0,-22 L-7,-14 Z"/></g>
+          <g transform="rotate(180)"><path d="M0,-3 L7,-14 L0,-22 L-7,-14 Z"/></g>
+          <g transform="rotate(270)"><path d="M0,-3 L7,-14 L0,-22 L-7,-14 Z"/></g>
+        </g>
+      </g>
     </g>
   </svg>`;
 }
+
 
     function artConsole(){
       return `<svg viewBox="0 0 640 240" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
