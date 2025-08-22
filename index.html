@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Rettungsleitstelle – Escape (ONLINE)</title>
   <meta name="theme-color" content="#070b10" />
+  <meta name="description" content="Online Escape Room – Rettung... Teams, Live-Fortschritt, Finale bei beidseitigem Abschluss." />
+  <!-- Ultra neon cyber style -->
   <style>
     :root{
       --bg:#070b10; --panel:#0b1220; --panel-2:#0e1a2c;
@@ -71,8 +73,10 @@
     .progress > div{height:100%; background:linear-gradient(90deg,var(--accent), var(--accent-3)); width:0%}
     .muted{color:var(--muted)} .small{font-size:.85rem}
     .note{border:1px dashed rgba(255,255,255,.18); padding:.6rem .8rem; border-radius:12px; color:var(--muted)}
+    .error{padding:.6rem .8rem; background:#2b0f13; border:1px solid #ff6b6b; border-radius:12px}
+    .success{padding:.6rem .8rem; background:#0f2b17; border:1px solid #69ff9c; border-radius:12px}
     .error-box{position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#2b0f13;border:1px solid #ff6b6b;color:#ffd6d6;border-radius:12px;padding:12px 14px;font-family:ui-monospace,monospace}
-    /* Modal (sicher & scrollable) */
+    /* Modal (Fix) */
     .modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:9999; display:flex; align-items:flex-start; justify-content:center; padding:24px; overflow:auto;}
     .modal-panel{max-height:90vh; width:min(960px, calc(100vw - 32px)); overflow:auto; position:relative;}
     .modal-header{position:sticky; top:0; z-index:2; background:linear-gradient(180deg, rgba(14,26,44,.96), rgba(9,16,28,.92)); border-bottom:1px solid rgba(255,255,255,.12); margin:-20px -20px 12px -20px; padding:16px 20px;}
@@ -100,7 +104,6 @@
       messagingSenderId: "834048574525",
       appId: "1:834048574525:web:d975375eeceac7aea35654"
     };
-    // ================================================
 
     // ---------- Error-Overlay ----------
     function showErrorBox(msg){
@@ -127,20 +130,10 @@
     const el = (t,cls)=>{const n=document.createElement(t); if(cls) n.className=cls; return n;}
     const escapeHTML = s => String(s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
     const escapeAttr = s => String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-    const norm = v => String(v||'').trim().toLowerCase().replace(/\s+/g,'');
+    const norm = v => String(v||'').trim().replace(/\s+/g,''); // alte Codes bleiben gültig (kein forced lowercase)
+    function nowISO(){ const d=new Date(); return d.toISOString().replaceAll(':','-').slice(0,19); }
 
-    let PROG = { 'team-a': null, 'team-b': null };
-    function bothTeamsDone(){
-      const ta = DATA?.teams?.find(t=>t.id==='team-a');
-      const tb = DATA?.teams?.find(t=>t.id==='team-b');
-      const a = PROG['team-a'], b = PROG['team-b'];
-      const aDone = a && ta && (a.solved||[]).filter(Boolean).length === (ta.puzzles?.length||0) && (ta.puzzles?.length||0) > 0;
-      const bDone = b && tb && (b.solved||[]).filter(Boolean).length === (tb.puzzles?.length||0) && (tb.puzzles?.length||0) > 0;
-      return !!(aDone && bDone);
-    }
-
-    const rref = path => db.ref(`rooms/${ROOM}/${path}`);
-
+    // Mini-Markdown
     function renderMarkdown(src){
       if(!src) return '';
       let out = escapeHTML(src);
@@ -163,6 +156,17 @@
     let TEAM = '';
     let ADMIN = false;
     let DATA = null;
+    let PROG = { 'team-a': null, 'team-b': null };
+
+    const rref = path => db.ref(`rooms/${ROOM}/${path}`);
+    function bothTeamsDone(){
+      const ta = DATA?.teams?.find(t=>t.id==='team-a');
+      const tb = DATA?.teams?.find(t=>t.id==='team-b');
+      const a = PROG['team-a'], b = PROG['team-b'];
+      const aDone = a && ta && (a.solved||[]).filter(Boolean).length === (ta.puzzles?.length||0) && (ta.puzzles?.length||0) > 0;
+      const bDone = b && tb && (b.solved||[]).filter(Boolean).length === (tb.puzzles?.length||0) && (tb.puzzles?.length||0) > 0;
+      return !!(aDone && bDone);
+    }
 
     // ---------- Live-Listener ----------
     async function attachLiveListeners(){
@@ -492,70 +496,84 @@
       };
     }
 
+    // *** HIER NUR MODAL FIX – Rest unverändert ***
     function editPuzzle(team, puzzle, index){
       const isNew = !puzzle;
       puzzle = puzzle || { id: uid(team.id+'-pz'), title:'Neues Rätsel', body:'', answers:[], hint:'', input:'text', afterText:'' };
 
-      const ov = document.createElement('div'); ov.className='modal-overlay';
-      const panel = document.createElement('div'); panel.className='panel modal-panel';
-      const header = document.createElement('div'); header.className='modal-header row';
-      const title = document.createElement('div'); title.className='title'; title.textContent = isNew?'Rätsel hinzufügen':'Rätsel bearbeiten';
-      const actions = document.createElement('div'); actions.className='row'; actions.style.gap='8px'; actions.style.flex='0 0 auto';
-      const saveBtn = document.createElement('button'); saveBtn.className='btn'; saveBtn.textContent='Speichern';
-      const closeBtn = document.createElement('button'); closeBtn.className='btn secondary'; closeBtn.textContent='Schließen';
-      actions.appendChild(saveBtn); actions.appendChild(closeBtn);
-      header.appendChild(title); header.appendChild(actions);
-      const content = document.createElement('div');
+      // Overlay
+      const m = el('div');
+      m.style.position = 'fixed';
+      m.style.inset = '0';
+      m.style.zIndex = 50;
+      m.style.background = 'rgba(0,0,0,.6)';
+      // >>> Fix: sichtbar & scrollbar
+      m.style.display='flex';
+      m.style.alignItems='flex-start';
+      m.style.justifyContent='center';
+      m.style.padding='24px';
+      m.style.overflow='auto';
 
-      function label(t){ const l=document.createElement('label'); l.textContent=t; return l; }
-      function spacer(){ const s=document.createElement('div'); s.className='spc'; return s; }
-      function row(){ const r=document.createElement('div'); r.className='row'; return r; }
+      // Modal panel
+      const panelHTML = `
+        <div class="panel" style="width:min(960px, calc(100vw - 32px)); max-height:90vh; overflow:auto;">
+          <div class="row" style="justify-content:space-between;align-items:center;margin:-8px 0 12px 0">
+            <div class="title" style="margin:0">${isNew?'Rätsel hinzufügen':'Rätsel bearbeiten'}</div>
+            <div class="row" style="flex:0 0 auto;gap:8px">
+              <button class="btn" id="save">Speichern</button>
+              <button class="btn secondary" id="x">Schließen</button>
+            </div>
+          </div>
 
-      content.appendChild(spacer()); content.appendChild(label('Titel'));
-      const t = document.createElement('input'); t.id='t'; t.value=puzzle.title||''; content.appendChild(t);
+          <div class="spc"></div>
+          <label>Titel</label><input id="t" value="${escapeAttr(puzzle.title)}"/>
+          <div class="spc"></div>
 
-      content.appendChild(spacer()); content.appendChild(label('Text (Markdown)'));
-      const b = document.createElement('textarea'); b.id='b'; b.value=puzzle.body||''; content.appendChild(b);
+          <label>Text (Markdown)</label><textarea id="b">${escapeHTML(puzzle.body||'')}</textarea>
+          <div class="spc"></div>
 
-      content.appendChild(spacer());
-      const r1=row(), c1=document.createElement('div'), c2=document.createElement('div');
-      c1.appendChild(label('Lösung(en) (eine pro Zeile)'));
-      const a=document.createElement('textarea'); a.id='a'; a.value=(puzzle.answers||[]).join('\n'); c1.appendChild(a);
-      c2.appendChild(label('Eingabefeld'));
-      const sel=document.createElement('select'); sel.id='in';
-      const o1=document.createElement('option'); o1.value='text'; o1.text='Text/Code';
-      const o2=document.createElement('option'); o2.value='number'; o2.text='Nur Zahlen';
-      sel.appendChild(o1); sel.appendChild(o2); sel.value=puzzle.input||'text';
-      c2.appendChild(sel); r1.appendChild(c1); r1.appendChild(c2); content.appendChild(r1);
+          <div class="row">
+            <div>
+              <label>Lösung(en) (eine pro Zeile)</label>
+              <textarea id="a">${escapeHTML((puzzle.answers||[]).join('\n'))}</textarea>
+            </div>
+            <div>
+              <label>Eingabefeld</label>
+              <select id="in">
+                <option value="text" ${puzzle.input==='text'?'selected':''}>Text/Code</option>
+                <option value="number" ${puzzle.input==='number'?'selected':''}>Nur Zahlen</option>
+              </select>
+            </div>
+          </div>
 
-      content.appendChild(spacer()); content.appendChild(label('Tipp (optional)'));
-      const h=document.createElement('input'); h.id='h'; h.value=puzzle.hint||''; content.appendChild(h);
+          <div class="spc"></div>
+          <label>Tipp (optional)</label><input id="h" value="${escapeAttr(puzzle.hint||'')}"/>
+          <div class="spc"></div>
 
-      content.appendChild(spacer()); content.appendChild(label('Zwischentext nach Lösung (HTML erlaubt)'));
-      const aft=document.createElement('textarea'); aft.id='aft'; aft.value=puzzle.afterText||''; content.appendChild(aft);
+          <label>Zwischentext nach Lösung (HTML erlaubt)</label>
+          <textarea id="aft">${escapeHTML(puzzle.afterText||'')}</textarea>
+          <div class="spc"></div>
+        </div>
+      `;
 
-      panel.appendChild(header); panel.appendChild(content); ov.appendChild(panel); document.body.appendChild(ov);
+      m.innerHTML = panelHTML;
+      document.body.appendChild(m);
 
-      closeBtn.onclick = ()=> ov.remove();
-      saveBtn.onclick = async ()=>{
-        try{
-          const P = {
-            id: puzzle.id || uid(team.id+'-pz'),
-            title: t.value,
-            body: b.value,
-            answers: (a.value||'').split(/\n/).map(s=>s.trim()).filter(Boolean),
-            hint: h.value,
-            input: sel.value,
-            afterText: aft.value
-          };
-          if(isNew){ team.puzzles.push(P); } else { team.puzzles[index]=P; }
-          await rref('data').set(DATA);
-          await ensureProgressShape(team.id);
-          ov.remove();
-          alert('Gespeichert.');
-        }catch(e){
-          console.error(e); showErrorBox('Rätsel speichern: '+(e?.message||e));
-        }
+      m.querySelector('#x').onclick = ()=> m.remove();
+      m.querySelector('#save').onclick = async ()=>{
+        const P = {
+          id: puzzle.id || uid(team.id+'-pz'),
+          title: m.querySelector('#t').value,
+          body: m.querySelector('#b').value,
+          answers: (m.querySelector('#a').value||'').split(/\n/).map(s=>s.trim()).filter(Boolean),
+          hint: m.querySelector('#h').value,
+          input: m.querySelector('#in').value,
+          afterText: m.querySelector('#aft').value
+        };
+        if(isNew){ team.puzzles.push(P); } else { team.puzzles[index]=P; }
+        await rref('data').set(DATA);
+        await ensureProgressShape(team.id);
+        m.remove();
       };
     }
 
