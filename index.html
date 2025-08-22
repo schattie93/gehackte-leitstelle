@@ -908,29 +908,36 @@ button.panel[data-team] .small.muted{ margin-top: -2px; display: inline-block; }
 // RTW-Illustration: ohne rechten Kasten, symmetrische Räder, Blaulicht-Puls
 // Malteserkreuz: NUR rote Außenkontur (korrekte Form, dünnere Linien)
 // RTW-Illustration inkl. Malteserkreuz-OUTLINE (korrekte Geometrie)
+// RTW-Illustration mit korrekt konstruiertem Malteserkreuz (nur Outline)
 function artAmbulance(){
-  // Maltese-Outline: pro 45°-Sektor -> äußere Spitze (R) – innerer Einzug (r) – äußere Spitze (R)
-  function malteserOutlinePoints(cx, cy, R=26, r=9, eps=13){
+  // Maltese-Outline: 16 Punkte im 22.5°-Raster.
+  // Reihenfolge: pro Sektor erst innerer Einschnitt (Kardinal), dann äußere Spitze (Diagonal).
+  function malteseOutlinePoints(cx, cy, R=24, r=14){
     const pts = [];
-    for(let i=0;i<8;i++){
-      const start = i*45;          // Startwinkel des Sektors
-      const mid   = start + 22.5;  // innerer Einzug (zwischen den Armen)
-      const end   = start + 45;    // Ende des Sektors
-      const A = (start + eps) * Math.PI/180;
-      const M = (mid)        * Math.PI/180;
-      const B = (end - eps)  * Math.PI/180;
+    for(let j=0; j<8; j++){
+      const degInner = j*45;           // 0°, 45°, 90° ... (Kardinalachsen = Einschnitt)
+      const degOuter = j*45 + 22.5;    // 22.5°, 67.5° ... (Diagonalen = Spitzen)
+      const ai = (degInner - 90) * Math.PI/180; // -90: 0° zeigt nach oben
+      const ao = (degOuter - 90) * Math.PI/180;
+      // Innerer Punkt
       pts.push(
-        (cx + R*Math.cos(A)).toFixed(1)+','+(cy + R*Math.sin(A)).toFixed(1),
-        (cx + r*Math.cos(M)).toFixed(1)+','+(cy + r*Math.sin(M)).toFixed(1),
-        (cx + R*Math.cos(B)).toFixed(1)+','+(cy + R*Math.sin(B)).toFixed(1),
+        (cx + r*Math.cos(ai)).toFixed(1) + ',' +
+        (cy + r*Math.sin(ai)).toFixed(1)
+      );
+      // Äußerer Punkt
+      pts.push(
+        (cx + R*Math.cos(ao)).toFixed(1) + ',' +
+        (cy + R*Math.sin(ao)).toFixed(1)
       );
     }
     return pts.join(' ');
   }
 
-  const cx = 225, cy = 130;               // Position im Kasten
-  const maltPoints = malteserOutlinePoints(cx, cy, 26, 9, 13); // R=26, r=9, Offset=13°
-  const strokeThin = 2;                   // dünnere Linie für das Kreuz
+  // Position des Kreuzes im Kasten + Geometrie
+  const cx = 225, cy = 130;       // ggf. leicht verschieben
+  const R  = 24;                  // Außenradius der Spitzen
+  const r  = 14;                  // Radius der Einzüge (größer = flacher, kleiner = tiefer)
+  const maltPoints = malteseOutlinePoints(cx, cy, R, r);
 
   return `<svg viewBox="0 0 640 240" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-label="RTW">
     <defs>
@@ -944,34 +951,35 @@ function artAmbulance(){
       </filter>
     </defs>
 
-    <!-- Hintergrundkarte -->
+    <!-- weicher Hintergrund -->
     <rect x="0" y="0" width="640" height="240" fill="url(#g1)"/>
 
     <g filter="url(#glow)">
       <!-- Fahrzeugkörper -->
       <rect x="90" y="90" width="270" height="80" rx="12" fill="#0e1a2c" stroke="#00ffc6"/>
 
-      <!-- Räder -->
+      <!-- Räder (symmetrisch im Kasten) -->
       <circle cx="150" cy="180" r="20" fill="#121a2b" stroke="#00ffc6"/>
       <circle cx="300" cy="180" r="20" fill="#121a2b" stroke="#7a5cff"/>
 
-      <!-- Blaulicht (Doppel-Puls) -->
+      <!-- Blaulicht: Doppel-Puls -->
       <rect x="120" y="70" width="25" height="20" rx="4" fill="#5ac8ff" stroke="#bfe6ff" stroke-width="2"/>
       <circle cx="132.5" cy="80" r="12" fill="#5ac8ff" opacity="0">
         <animate attributeName="r" values="12;32;12;32;12" keyTimes="0;0.18;0.36;0.54;1" dur="1.4s" repeatCount="indefinite"/>
         <animate attributeName="opacity" values="0;.9;0;.9;0" keyTimes="0;0.18;0.36;0.54;1" dur="1.4s" repeatCount="indefinite"/>
       </circle>
 
-      <!-- Malteserkreuz: NUR Außenkontur (korrekte 8-Spitzen-Geometrie) -->
+      <!-- Malteserkreuz: NUR rote Außenkontur -->
       <polygon points="${maltPoints}"
                fill="none"
                stroke="#e6002e"
-               stroke-width="${strokeThin}"
+               stroke-width="2"
                stroke-linejoin="miter"
-               stroke-miterlimit="2"/>
+               stroke-miterlimit="4"/>
     </g>
   </svg>`;
 }
+
 
 
 
