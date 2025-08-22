@@ -900,23 +900,62 @@ button.panel[data-team] .small.muted{ margin-top: -2px; display: inline-block; }
       </svg>`;
       return '';
     }
-    function artAmbulance(){
-      return `<svg viewBox="0 0 640 240" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#00ffc6" stop-opacity=".25"/><stop offset="1" stop-color="#ff3b81" stop-opacity=".25"/></linearGradient>
-          <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-        </defs>
-        <rect x="0" y="0" width="640" height="240" fill="url(#g1)"/>
-        <g filter="url(#glow)">
-          <rect x="90" y="90" width="270" height="80" rx="12" fill="#0e1a2c" stroke="#00ffc6"/>
-          <rect x="360" y="110" width="150" height="60" rx="10" fill="#0e1a2c" stroke="#7a5cff"/>
-          <circle cx="150" cy="180" r="20" fill="#121a2b" stroke="#00ffc6"/>
-          <circle cx="360" cy="180" r="20" fill="#121a2b" stroke="#7a5cff"/>
-          <path d="M130 120h70M165 100v40" stroke="#ff3b81" stroke-width="6" stroke-linecap="round"/>
-          <rect x="120" y="70" width="25" height="20" rx="4" fill="#ff3b81"/>
-        </g>
-      </svg>`;
-    }
+    // RTW-Illustration: ohne rechten Kasten, symmetrische Räder, Blaulicht (doppelter Puls)
+function artAmbulance(){
+  return `<svg viewBox="0 0 640 240" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-label="RTW">
+    <defs>
+      <linearGradient id="g1" x1="0" x2="1">
+        <stop offset="0" stop-color="#00ffc6" stop-opacity=".25"/>
+        <stop offset="1" stop-color="#ff3b81" stop-opacity=".25"/>
+      </linearGradient>
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="4" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <!-- weicher Kartenhintergrund -->
+    <rect x="0" y="0" width="640" height="240" fill="url(#g1)"/>
+
+    <g filter="url(#glow)">
+      <!-- EIN Fahrzeugkörper (rechter Kasten entfernt) -->
+      <rect id="body" x="90" y="90" width="270" height="80" rx="12"
+            fill="#0e1a2c" stroke="#00ffc6" />
+
+      <!-- Räder: links & rechts symmetrisch im Body -->
+      <!-- links: 90 + 60 = 150 -->
+      <circle id="wheel-left" cx="150" cy="180" r="20"
+              fill="#121a2b" stroke="#00ffc6"/>
+      <!-- rechts: Body-Rechts 360 - 60 = 300 -->
+      <circle id="wheel-right" cx="300" cy="180" r="20"
+              fill="#121a2b" stroke="#7a5cff"/>
+
+      <!-- Blaulicht: Doppel-Puls -->
+      <!-- statischer Lampenkörper -->
+      <rect id="beacon" x="120" y="70" width="25" height="20" rx="4"
+            fill="#5ac8ff" stroke="#bfe6ff" stroke-width="2"/>
+      <!-- pulsierende Aura (doppelter Blitz) -->
+      <circle cx="132.5" cy="80" r="12" fill="#5ac8ff" opacity="0">
+        <!-- Radius pulst: klein -> groß -> klein -> groß -> klein -->
+        <animate attributeName="r"
+                 values="12;32;12;32;12"
+                 keyTimes="0;0.18;0.36;0.54;1"
+                 dur="1.4s"
+                 repeatCount="indefinite"/>
+        <!-- Sichtbarkeit passend zum Doppelblitz -->
+        <animate attributeName="opacity"
+                 values="0;.9;0;.9;0"
+                 keyTimes="0;0.18;0.36;0.54;1"
+                 dur="1.4s"
+                 repeatCount="indefinite"/>
+      </circle>
+
+      <!-- Sanitätskreuz -->
+      <path d="M130 120h70 M165 100v40" stroke="#ff3b81" stroke-width="6" stroke-linecap="round"/>
+    </g>
+  </svg>`;
+}
+
     function artConsole(){
       return `<svg viewBox="0 0 640 240" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
         <rect width="640" height="240" fill="#0b1523"/>
